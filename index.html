@@ -93,7 +93,9 @@
         <div class="header-bg">
             <div class="d-flex justify-content-between align-items-center">
                 <div onclick="bukaProfil()" style="cursor: pointer;">
-                    <h5 class="mb-0 fw-bold" id="nama-guru">Selamat Datang, Nama Guru</h5>
+                    <!-- Sapaan "Selamat Datang" yang baru -->
+                    <p class="mb-0 small text-white-50">Selamat Datang,</p>
+                    <h5 class="mb-0 fw-bold" id="nama-guru">Nama Guru</h5>
                     <small class="text-white-50" id="nip-guru">NIP: -</small>
                     <br><span class="badge bg-light text-primary mt-1" style="font-size: 10px;">Lihat Profil</span>
                 </div>
@@ -266,7 +268,7 @@
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
         }, 1000);
 
-        // Fungsi Notifikasi Custom (Pengganti Alert)
+        // Fungsi Notifikasi Custom
         function showCustomAlert(pesan, tipe = 'info') {
             const ikon = document.getElementById('custom-alert-icon');
             if(tipe === 'error') {
@@ -307,6 +309,7 @@
             }
         }
 
+        // --- INISIALISASI PETA & GPS ---
         function initPetaDanGPS() {
             if(!myMap) {
                 myMap = L.map('map').setView([-0.789275, 113.921327], 5);
@@ -349,6 +352,7 @@
             }
         }
 
+        // --- PROSES LOGIN ---
         function prosesLogin(event) {
             event.preventDefault();
             const nip = document.getElementById('input-nip').value;
@@ -370,7 +374,7 @@
                     currentUser.golongan = data.golongan;
                     currentUser.jabatan = data.jabatan;
                     
-                    document.getElementById('nama-guru').innerText = "Selamat Datang, " + data.nama;
+                    document.getElementById('nama-guru').innerText = data.nama; // Dihapus kata Halo nya
                     document.getElementById('nip-guru').innerText = "NIP: " + data.nip;
                     switchView('view-dashboard');
                 } else {
@@ -383,6 +387,7 @@
             });
         }
 
+        // --- FITUR KAMERA ---
         function bukaKamera(jenis) {
             jenisAbsenAktif = jenis;
             document.getElementById('judul-kamera').innerText = "Absen " + jenis;
@@ -415,6 +420,7 @@
             switchView('view-dashboard');
         }
 
+        // --- PROSES KIRIM ABSEN ---
         function prosesAbsen() {
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
@@ -460,6 +466,7 @@
             switchView('view-login');
         }
 
+        // --- FITUR IZIN / SAKIT ---
         function bukaIzin() {
             document.getElementById('form-izin').reset();
             switchView('view-izin');
@@ -522,6 +529,7 @@
             });
         }
 
+        // --- FITUR RIWAYAT ---
         function bukaRiwayat() {
             switchView('view-riwayat');
             document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Mencari data riwayat...</p></div>';
@@ -573,6 +581,7 @@
             container.innerHTML = htmlStr;
         }
 
+        // --- FITUR PROFIL ---
         function bukaProfil() {
             document.getElementById('profil-nama').innerText = currentUser.nama;
             document.getElementById('profil-nip').innerText = "NIP: " + currentUser.nip;
