@@ -268,7 +268,7 @@
 
     <script>
         // === URL APPS SCRIPT ===
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyF7UXRrFu_JXfQfFSEG4dwhyYQXBcJvNxEM6plu9naBSNlnKrrtFiuB7aQhP5h1f-vvQ/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJLpHa5Ac3eu0kU4i_1pzOE7HzgJVyMQsgdMnc79-4SohJ2LrxmadkzvjQK1NCWF02yw/exec"; 
 
         // Variabel Global
         let currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
@@ -404,8 +404,8 @@
         // --- LOGIN ---
         function prosesLogin(event) {
             event.preventDefault();
-            const nip = document.getElementById('input-nip').value;
-            const password = document.getElementById('input-password').value;
+            const nip = document.getElementById('input-nip').value.trim();
+            const password = document.getElementById('input-password').value.trim();
 
             toggleLoading(true, "Memverifikasi akun Anda...");
 
