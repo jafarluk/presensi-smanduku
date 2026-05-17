@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Presensi Guru</title>
+    <!-- Bootstrap 5 & Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Library Peta Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f0f2f5; }
+        
+        /* CSS Login */
+        .login-card { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 2rem; }
+        .btn-primary { background-color: #1a73e8; border: none; border-radius: 8px; padding: 12px; font-weight: 500; }
+        .btn-primary:hover { background-color: #1557b0; }
+        
+        /* CSS Dashboard */
+        .header-bg { background-color: #1a73e8; color: white; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; padding: 2rem 1.5rem 3rem 1.5rem; box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+        .menu-card { border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); cursor: pointer; text-align: center; padding: 1.5rem 1rem; background: white; transition: transform 0.2s; height: 100%;}
+        .menu-card:active { transform: scale(0.95); background-color: #f1f3f4; }
+        .icon-box { display: inline-flex; border-radius: 50%; padding: 16px; margin-bottom: 12px; }
+        
+        /* Efek menumpuk ke atas (overlapping) */
+        .overlap-top { margin-top: -30px; position: relative; z-index: 10; }
+
+        /* Warna Tombol */
+        .bg-green { background-color: #e6f4ea; color: #1e8e3e; }
+        .bg-red { background-color: #fce8e6; color: #d93025; }
+        .bg-blue { background-color: #e8f0fe; color: #1a73e8; }
+        .bg-yellow { background-color: #fef7e0; color: #f9ab00; }
+        
+        /* Peta Area */
+        .map-container { border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); background: white; padding: 10px;}
+        #map { height: 180px; width: 100%; border-radius: 12px; z-index: 1;}
+        
+        /* Utilities */
+        .d-none { display: none !important; }
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #custom-alert { z-index: 10000; }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Alert Overlay -->
+    <div id="custom-alert" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 flex-column justify-content-center align-items-center">
+        <div class="bg-white p-4 rounded-4 shadow text-center" style="max-width: 320px; width: 90%;">
+            <span id="custom-alert-icon" class="material-icons mb-3" style="font-size: 48px; color: #1a73e8;">info</span>
+            <p id="custom-alert-msg" class="mb-4 fw-medium text-dark"></p>
+            <button class="btn btn-primary w-100 rounded-3 fw-bold py-2" onclick="closeCustomAlert()">OK</button>
+        </div>
+    </div>
+
+    <!-- Overlay Loading -->
+    <div id="loading-overlay" class="d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <p class="mt-3 fw-bold text-primary">Memproses data...</p>
+    </div>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="view-login" class="container min-vh-100 d-flex align-items-center">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card login-card text-center">
+                    <div class="mb-4">
+                        <span class="material-icons" style="font-size: 64px; color: #1a73e8;">school</span>
+                        <h4 class="mt-2 fw-bold">Presensi SMANDUKU</h4>
+                        <p class="text-muted small">Silakan login untuk mencatat kehadiran</p>
+                    </div>
+                    <form id="form-login" onsubmit="prosesLogin(event)">
+                        <div class="mb-3 text-start">
+                            <label class="form-label small fw-bold">NIP</label>
+                            <input type="text" id="input-nip" class="form-control" placeholder="Contoh: 123456" required>
+                        </div>
+                        <div class="mb-4 text-start">
+                            <label class="form-label small fw-bold">Kata Sandi</label>
+                            <input type="password" id="input-password" class="form-control" placeholder="Masukkan kata sandi" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">MASUK</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALAMAN DASHBOARD -->
+    <div id="view-dashboard" class="d-none pb-4">
+        <div class="header-bg">
+            <div class="d-flex justify-content-between align-items-center">
+                <div onclick="bukaProfil()" style="cursor: pointer;">
+                    <h5 class="mb-0 fw-bold" id="nama-guru">Halo, Nama Guru</h5>
+                    <small class="text-white-50" id="nip-guru">NIP: -</small>
+                    <br><span class="badge bg-light text-primary mt-1" style="font-size: 10px;">Lihat Profil</span>
+                </div>
+                <span class="material-icons" style="font-size: 40px; cursor: pointer;" onclick="logout()">logout</span>
+            </div>
+            <div class="mt-4 text-center">
+                <p class="mb-0 small text-white-50">Waktu Saat Ini</p>
+                <h2 class="fw-bold mb-0" id="clock">00:00:00</h2>
+            </div>
+        </div>
+
+        <div class="container px-3">
+            
+            <!-- Menu Tombol (Grid 4 Kotak) -->
+            <div class="row g-3 overlap-top mb-4">
+                <div class="col-6">
+                    <div class="card menu-card" onclick="bukaKamera('Masuk')">
+                        <div class="icon-box bg-green mx-auto"><span class="material-icons">login</span></div>
+                        <h6 class="fw-bold mb-0 small">Absen Masuk</h6>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card menu-card" onclick="bukaKamera('Pulang')">
+                        <div class="icon-box bg-red mx-auto"><span class="material-icons">logout</span></div>
+                        <h6 class="fw-bold mb-0 small">Absen Pulang</h6>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card menu-card" onclick="bukaRiwayat()">
+                        <div class="icon-box bg-blue mx-auto"><span class="material-icons">history</span></div>
+                        <h6 class="fw-bold mb-0 small">Riwayat</h6>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card menu-card" onclick="bukaIzin()">
+                        <div class="icon-box bg-yellow mx-auto"><span class="material-icons">edit_document</span></div>
+                        <h6 class="fw-bold mb-0 small">Izin / Sakit</h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peta Lokasi -->
+            <div class="map-container mb-3">
+                <h6 class="fw-bold mb-2 small text-muted"><span class="material-icons align-middle" style="font-size: 16px;">my_location</span> Titik Lokasi Anda</h6>
+                <div id="map"></div>
+                <p id="dashboard-info-lokasi" class="small mt-2 mb-0 text-center fw-bold text-warning">Mencari sinyal GPS...</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- HALAMAN KAMERA -->
+    <div id="view-kamera" class="d-none min-vh-100 bg-dark text-white d-flex flex-column align-items-center justify-content-center p-3">
+        <h4 id="judul-kamera" class="mb-3 fw-bold">Absen</h4>
+        
+        <div class="position-relative w-100" style="max-width: 400px;">
+            <video id="kamera-video" class="w-100 rounded-3 shadow" autoplay playsinline></video>
+            <canvas id="kamera-canvas" class="d-none"></canvas>
+        </div>
+        
+        <div class="mt-4 text-center w-100" style="max-width: 400px;">
+            <div class="d-flex gap-2">
+                <button class="btn btn-secondary w-50 py-2 rounded-3 fw-bold" onclick="tutupKamera()">BATAL</button>
+                <button id="btn-capture" class="btn btn-success w-50 py-2 rounded-3 fw-bold" onclick="prosesAbsen()">
+                    <span class="material-icons align-middle me-1">photo_camera</span> FOTO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALAMAN IZIN / SAKIT -->
+    <div id="view-izin" class="d-none min-vh-100 bg-light p-3 pb-5">
+        <div class="d-flex align-items-center mb-4 mt-3">
+            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <h5 class="mb-0 fw-bold">Pengajuan Izin / Sakit</h5>
+        </div>
+        
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <form id="form-izin" onsubmit="prosesIzin(event)">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Jenis Keterangan</label>
+                    <select id="izin-jenis" class="form-select rounded-3" required>
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="Sakit">Sakit</option>
+                        <option value="Izin">Izin Terencana</option>
+                        <option value="Dinas">Dinas Luar</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Alasan / Keterangan</label>
+                    <textarea id="izin-alasan" class="form-control rounded-3" rows="3" placeholder="Tuliskan alasan dengan jelas..." required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold">Bukti Foto / Surat (Opsional)</label>
+                    <input type="file" id="izin-file" class="form-control rounded-3" accept="image/*">
+                    <small class="text-muted" style="font-size: 11px;">*Upload foto surat keterangan dokter atau bukti lainnya.</small>
+                </div>
+                <button type="submit" class="btn btn-warning w-100 py-2 rounded-3 fw-bold">KIRIM PENGAJUAN</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- HALAMAN RIWAYAT -->
+    <div id="view-riwayat" class="d-none min-vh-100 bg-light p-3 pb-5">
+        <div class="d-flex align-items-center mb-4 mt-3">
+            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <h5 class="mb-0 fw-bold">Riwayat Kehadiran</h5>
+        </div>
+        
+        <div id="tempat-riwayat">
+            <div class="text-center mt-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Memuat data riwayat...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALAMAN PROFIL -->
+    <div id="view-profil" class="d-none min-vh-100 bg-light p-3 pb-5">
+        <div class="d-flex align-items-center mb-4 mt-3">
+            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <h5 class="mb-0 fw-bold">Profil Saya</h5>
+        </div>
+        
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center mb-3">
+            <span class="material-icons text-primary mb-2" style="font-size: 64px;">account_circle</span>
+            <h5 class="fw-bold mb-0" id="profil-nama">-</h5>
+            <p class="text-muted small mb-0" id="profil-nip">-</p>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item p-3">
+                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Pangkat</small>
+                    <span id="profil-pangkat">-</span>
+                </li>
+                <li class="list-group-item p-3">
+                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Golongan</small>
+                    <span id="profil-golongan">-</span>
+                </li>
+                <li class="list-group-item p-3">
+                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Jabatan / Tugas Tambahan</small>
+                    <span id="profil-jabatan">-</span>
+                </li>
+            </ul>
+        </div>
+        <p class="text-center text-muted mt-3 small">Jika ada data yang tidak sesuai, mohon hubungi Admin Tata Usaha.</p>
+    </div>
+
+    <!-- Library Peta Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // === URL APPS SCRIPT ANDA ===
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJLpHa5Ac3eu0kU4i_1pzOE7HzgJVyMQsgdMnc79-4SohJ2LrxmadkzvjQK1NCWF02yw/exec"; 
+
+        // Variabel Global
+        let currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
+        let streamVideo = null;
+        let jenisAbsenAktif = "";
+        
+        // Variabel Peta
+        let myMap = null;
+        let myMarker = null;
+        let kordinatLokasi = "Mencari lokasi...";
+        let gpsWatcher = null; 
+
+        // Update Jam
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
+        }, 1000);
+
+        // Fungsi Notifikasi Custom (Pengganti Alert)
+        function showCustomAlert(pesan, tipe = 'info') {
+            const ikon = document.getElementById('custom-alert-icon');
+            if(tipe === 'error') {
+                ikon.innerText = 'error';
+                ikon.style.color = '#d93025'; // Merah
+            } else if (tipe === 'success') {
+                ikon.innerText = 'check_circle';
+                ikon.style.color = '#1e8e3e'; // Hijau
+            } else {
+                ikon.innerText = 'info';
+                ikon.style.color = '#1a73e8'; // Biru
+            }
+            document.getElementById('custom-alert-msg').innerText = pesan;
+            document.getElementById('custom-alert').classList.remove('d-none');
+            document.getElementById('custom-alert').classList.add('d-flex');
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('custom-alert').classList.remove('d-flex');
+            document.getElementById('custom-alert').classList.add('d-none');
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loading-overlay').classList.toggle('d-none', !show);
+        }
+
+        function switchView(viewId) {
+            document.getElementById('view-login').classList.add('d-none');
+            document.getElementById('view-dashboard').classList.add('d-none');
+            document.getElementById('view-kamera').classList.add('d-none');
+            document.getElementById('view-izin').classList.add('d-none'); 
+            document.getElementById('view-riwayat').classList.add('d-none'); 
+            document.getElementById('view-profil').classList.add('d-none'); 
+            document.getElementById(viewId).classList.remove('d-none');
+
+            if(viewId === 'view-dashboard') {
+                setTimeout(initPetaDanGPS, 300); 
+            }
+        }
+
+        function initPetaDanGPS() {
+            if(!myMap) {
+                myMap = L.map('map').setView([-0.789275, 113.921327], 5);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(myMap);
+            }
+            myMap.invalidateSize(); 
+
+            if (navigator.geolocation) {
+                document.getElementById('dashboard-info-lokasi').innerText = "Mencari sinyal GPS...";
+                document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-warning";
+
+                if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
+
+                gpsWatcher = navigator.geolocation.watchPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        kordinatLokasi = lat + ", " + lng;
+
+                        document.getElementById('dashboard-info-lokasi').innerHTML = "📍 Lokasi akurat ditemukan!";
+                        document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-success";
+                        myMap.setView([lat, lng], 17);
+
+                        if(myMarker) {
+                            myMarker.setLatLng([lat, lng]);
+                        } else {
+                            myMarker = L.marker([lat, lng]).addTo(myMap);
+                        }
+                    },
+                    function(error) {
+                        kordinatLokasi = "Akses GPS ditolak/Gagal";
+                        document.getElementById('dashboard-info-lokasi').innerHTML = "❌ Gagal mendapat lokasi (Aktifkan GPS)";
+                        document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-danger";
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+            }
+        }
+
+        function prosesLogin(event) {
+            event.preventDefault();
+            const nip = document.getElementById('input-nip').value;
+            const password = document.getElementById('input-password').value;
+
+            toggleLoading(true);
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', nip: nip, password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.status === 'success') {
+                    currentUser.nama = data.nama;
+                    currentUser.nip = data.nip;
+                    currentUser.pangkat = data.pangkat;
+                    currentUser.golongan = data.golongan;
+                    currentUser.jabatan = data.jabatan;
+                    
+                    document.getElementById('nama-guru').innerText = "Halo, " + data.nama;
+                    document.getElementById('nip-guru').innerText = "NIP: " + data.nip;
+                    switchView('view-dashboard');
+                } else {
+                    showCustomAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                showCustomAlert("Terjadi kesalahan koneksi internet.", 'error');
+            });
+        }
+
+        function bukaKamera(jenis) {
+            jenisAbsenAktif = jenis;
+            document.getElementById('judul-kamera').innerText = "Absen " + jenis;
+            
+            if(kordinatLokasi === "Mencari lokasi...") {
+                showCustomAlert("Mohon tunggu sebentar, sedang mencari lokasi GPS Anda...", 'info');
+                return;
+            }
+
+            switchView('view-kamera');
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(function(stream) {
+                    streamVideo = stream;
+                    const video = document.getElementById('kamera-video');
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function(err) {
+                    showCustomAlert("Akses kamera ditolak atau perangkat tidak mendukung.", 'error');
+                    tutupKamera();
+                });
+        }
+
+        function tutupKamera() {
+            if (streamVideo) {
+                streamVideo.getTracks().forEach(track => track.stop());
+                streamVideo = null;
+            }
+            switchView('view-dashboard');
+        }
+
+        function prosesAbsen() {
+            const video = document.getElementById('kamera-video');
+            const canvas = document.getElementById('kamera-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const fotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+            tutupKamera(); 
+            toggleLoading(true);
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'absen', 
+                    nip: currentUser.nip, 
+                    nama: currentUser.nama,
+                    pangkat: currentUser.pangkat,
+                    golongan: currentUser.golongan,
+                    jabatan: currentUser.jabatan,
+                    jenis: jenisAbsenAktif,
+                    lokasi: kordinatLokasi,
+                    foto: fotoBase64
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                toggleLoading(false);
+                showCustomAlert(data.message, data.status);
+            })
+            .catch(error => {
+                toggleLoading(false);
+                showCustomAlert("Gagal mengirim absen. Periksa koneksi Anda.", 'error');
+            });
+        }
+
+        function logout() {
+            currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
+            document.getElementById('form-login').reset();
+            if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
+            switchView('view-login');
+        }
+
+        function bukaIzin() {
+            document.getElementById('form-izin').reset();
+            switchView('view-izin');
+        }
+
+        function prosesIzin(event) {
+            event.preventDefault();
+            
+            const jenis = document.getElementById('izin-jenis').value;
+            const alasan = document.getElementById('izin-alasan').value;
+            const fileInput = document.getElementById('izin-file');
+            
+            let fotoBase64 = "";
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if(file.size > 5 * 1024 * 1024) {
+                    showCustomAlert("Ukuran file terlalu besar! Maksimal 5MB.", 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    fotoBase64 = reader.result;
+                    kirimDataIzin(jenis, alasan, fotoBase64);
+                }
+                reader.readAsDataURL(file); 
+            } else {
+                kirimDataIzin(jenis, alasan, "");
+            }
+        }
+
+        function kirimDataIzin(jenis, alasan, fotoBase64) {
+            toggleLoading(true);
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'izin', 
+                    nip: currentUser.nip, 
+                    nama: currentUser.nama,
+                    pangkat: currentUser.pangkat,
+                    golongan: currentUser.golongan,
+                    jabatan: currentUser.jabatan,
+                    jenis_izin: jenis,
+                    alasan: alasan,
+                    foto: fotoBase64
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                toggleLoading(false);
+                showCustomAlert(data.message, data.status);
+                if(data.status === 'success') {
+                    switchView('view-dashboard');
+                }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                showCustomAlert("Gagal mengirim pengajuan. Periksa koneksi internet Anda.", 'error');
+            });
+        }
+
+        function bukaRiwayat() {
+            switchView('view-riwayat');
+            document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Mencari data riwayat...</p></div>';
+            
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'riwayat', nip: currentUser.nip })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    tampilkanRiwayat(data.data);
+                } else {
+                    document.getElementById('tempat-riwayat').innerHTML = '<p class="text-center text-danger mt-5">Gagal memuat riwayat.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('tempat-riwayat').innerHTML = '<p class="text-center text-danger mt-5">Terjadi kesalahan koneksi.</p>';
+            });
+        }
+
+        function tampilkanRiwayat(dataArray) {
+            const container = document.getElementById('tempat-riwayat');
+            
+            if(dataArray.length === 0) {
+                container.innerHTML = `
+                <div class="text-center mt-5">
+                    <span class="material-icons text-muted" style="font-size: 64px;">event_busy</span>
+                    <p class="mt-2 text-muted">Belum ada catatan kehadiran.</p>
+                </div>`;
+                return;
+            }
+
+            let htmlStr = "";
+            dataArray.forEach(item => {
+                let badgeClass = item.jenis === "Masuk" ? "bg-success" : "bg-danger";
+                htmlStr += `
+                <div class="card border-0 shadow-sm mb-3 rounded-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge ${badgeClass} px-3 py-2 rounded-pill">${item.jenis}</span>
+                            <small class="text-muted fw-bold">${item.waktu}</small>
+                        </div>
+                        <p class="mb-0 small text-secondary"><span class="material-icons align-middle" style="font-size:16px;">location_on</span> ${item.lokasi}</p>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = htmlStr;
+        }
+
+        function bukaProfil() {
+            document.getElementById('profil-nama').innerText = currentUser.nama;
+            document.getElementById('profil-nip').innerText = "NIP: " + currentUser.nip;
+            document.getElementById('profil-pangkat').innerText = currentUser.pangkat || "-";
+            document.getElementById('profil-golongan').innerText = currentUser.golongan || "-";
+            document.getElementById('profil-jabatan').innerText = currentUser.jabatan || "-";
+            switchView('view-profil');
+        }
+
+    </script>
+</body>
+</html>
