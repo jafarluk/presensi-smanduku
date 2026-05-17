@@ -39,27 +39,32 @@
         .map-container { border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); background: white; padding: 10px;}
         #map { height: 180px; width: 100%; border-radius: 12px; z-index: 1;}
         
+        /* Kamera Face Guide Overlay */
+        .camera-wrapper { position: relative; width: 100%; max-width: 400px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .camera-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: center; align-items: center; z-index: 5; }
+        .face-guide { width: 220px; height: 280px; border: 3px dashed rgba(255, 255, 255, 0.9); border-radius: 50%; box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.45); }
+        
         /* Utilities */
         .d-none { display: none !important; }
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #custom-alert { z-index: 10000; }
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); backdrop-filter: blur(4px); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s;}
+        #custom-alert { z-index: 10000; backdrop-filter: blur(3px); }
     </style>
 </head>
 <body>
 
     <!-- Custom Alert Overlay -->
     <div id="custom-alert" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 flex-column justify-content-center align-items-center">
-        <div class="bg-white p-4 rounded-4 shadow text-center" style="max-width: 320px; width: 90%;">
+        <div class="bg-white p-4 rounded-4 shadow text-center" style="max-width: 320px; width: 90%; animation: slideIn 0.3s ease-out;">
             <span id="custom-alert-icon" class="material-icons mb-3" style="font-size: 48px; color: #1a73e8;">info</span>
             <p id="custom-alert-msg" class="mb-4 fw-medium text-dark"></p>
             <button class="btn btn-primary w-100 rounded-3 fw-bold py-2" onclick="closeCustomAlert()">OK</button>
         </div>
     </div>
 
-    <!-- Overlay Loading -->
+    <!-- Overlay Loading Dynamis -->
     <div id="loading-overlay" class="d-none">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 fw-bold text-primary">Memproses data...</p>
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; border-width: 4px;"></div>
+        <p id="loading-text" class="mt-3 fw-bold text-primary">Memproses data...</p>
     </div>
 
     <!-- HALAMAN LOGIN -->
@@ -74,14 +79,14 @@
                     </div>
                     <form id="form-login" onsubmit="prosesLogin(event)">
                         <div class="mb-3 text-start">
-                            <label class="form-label small fw-bold">NIP</label>
-                            <input type="text" id="input-nip" class="form-control" placeholder="Contoh: 123456" required>
+                            <label class="form-label small fw-bold text-secondary">NIP</label>
+                            <input type="text" id="input-nip" class="form-control bg-light border-0" placeholder="Contoh: 123456" required>
                         </div>
                         <div class="mb-4 text-start">
-                            <label class="form-label small fw-bold">Kata Sandi</label>
-                            <input type="password" id="input-password" class="form-control" placeholder="Masukkan kata sandi" required>
+                            <label class="form-label small fw-bold text-secondary">Kata Sandi</label>
+                            <input type="password" id="input-password" class="form-control bg-light border-0" placeholder="Masukkan kata sandi" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">MASUK</button>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">MASUK</button>
                     </form>
                 </div>
             </div>
@@ -93,21 +98,20 @@
         <div class="header-bg">
             <div class="d-flex justify-content-between align-items-center">
                 <div onclick="bukaProfil()" style="cursor: pointer;">
-                    <p class="mb-0 small text-white-50">Selamat Datang,</p>
+                    <p class="mb-0 small text-white-50" style="font-size: 13px;">Selamat Datang,</p>
                     <h5 class="mb-0 fw-bold" id="nama-guru">Nama Guru</h5>
                     <small class="text-white-50" id="nip-guru">NIP: -</small>
-                    <br><span class="badge bg-light text-primary mt-1" style="font-size: 10px;">Lihat Profil</span>
+                    <br><span class="badge bg-light text-primary mt-2" style="font-size: 10px; border-radius: 12px; padding: 4px 10px;">Lihat Profil <span class="material-icons align-middle" style="font-size: 12px;">chevron_right</span></span>
                 </div>
-                <span class="material-icons" style="font-size: 40px; cursor: pointer;" onclick="logout()">logout</span>
+                <span class="material-icons" style="font-size: 32px; cursor: pointer; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 50%;" onclick="logout()">logout</span>
             </div>
             <div class="mt-4 text-center">
                 <p class="mb-0 small text-white-50">Waktu Saat Ini</p>
-                <h2 class="fw-bold mb-0" id="clock">00:00:00</h2>
+                <h2 class="fw-bold mb-0" id="clock" style="font-size: 2.5rem; letter-spacing: 2px;">00:00:00</h2>
             </div>
         </div>
 
         <div class="container px-3">
-            
             <!-- Menu Tombol (Grid 4 Kotak) -->
             <div class="row g-3 overlap-top mb-4">
                 <div class="col-6">
@@ -137,28 +141,35 @@
             </div>
 
             <!-- Peta Lokasi -->
-            <div class="map-container mb-3">
-                <h6 class="fw-bold mb-2 small text-muted"><span class="material-icons align-middle" style="font-size: 16px;">my_location</span> Titik Lokasi Anda</h6>
+            <div class="map-container mb-3 border-0">
+                <h6 class="fw-bold mb-2 small text-muted"><span class="material-icons align-middle text-primary" style="font-size: 16px;">my_location</span> Titik Lokasi Anda</h6>
                 <div id="map"></div>
-                <p id="dashboard-info-lokasi" class="small mt-2 mb-0 text-center fw-bold text-warning">Mencari sinyal GPS...</p>
+                <div class="d-flex align-items-center justify-content-center mt-2">
+                    <div class="spinner-grow spinner-grow-sm text-warning me-2" id="gps-spinner" role="status"></div>
+                    <p id="dashboard-info-lokasi" class="small mb-0 text-center fw-bold text-warning">Mencari sinyal GPS...</p>
+                </div>
             </div>
-
         </div>
     </div>
 
-    <!-- HALAMAN KAMERA -->
+    <!-- HALAMAN KAMERA DENGAN FACE GUIDE -->
     <div id="view-kamera" class="d-none min-vh-100 bg-dark text-white d-flex flex-column align-items-center justify-content-center p-3">
-        <h4 id="judul-kamera" class="mb-3 fw-bold">Absen</h4>
+        <h4 id="judul-kamera" class="mb-3 fw-bold text-white">Absen</h4>
+        <p class="small text-white-50 text-center mb-4">Posisikan wajah Anda di dalam lingkaran panduan</p>
         
-        <div class="position-relative w-100" style="max-width: 400px;">
-            <video id="kamera-video" class="w-100 rounded-3 shadow" autoplay playsinline></video>
+        <div class="camera-wrapper">
+            <video id="kamera-video" class="w-100" style="object-fit: cover; min-height: 400px;" autoplay playsinline></video>
+            <!-- Face Guide Overlay -->
+            <div class="camera-overlay">
+                <div class="face-guide"></div>
+            </div>
             <canvas id="kamera-canvas" class="d-none"></canvas>
         </div>
         
         <div class="mt-4 text-center w-100" style="max-width: 400px;">
-            <div class="d-flex gap-2">
-                <button class="btn btn-secondary w-50 py-2 rounded-3 fw-bold" onclick="tutupKamera()">BATAL</button>
-                <button id="btn-capture" class="btn btn-success w-50 py-2 rounded-3 fw-bold" onclick="prosesAbsen()">
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-light w-50 py-3 rounded-4 fw-bold" onclick="tutupKamera()">BATAL</button>
+                <button id="btn-capture" class="btn btn-primary w-50 py-3 rounded-4 fw-bold shadow-lg" onclick="prosesAbsen()">
                     <span class="material-icons align-middle me-1">photo_camera</span> FOTO
                 </button>
             </div>
@@ -168,15 +179,15 @@
     <!-- HALAMAN IZIN / SAKIT -->
     <div id="view-izin" class="d-none min-vh-100 bg-light p-3 pb-5">
         <div class="d-flex align-items-center mb-4 mt-3">
-            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <span class="material-icons me-3 bg-white p-2 rounded-circle shadow-sm" style="font-size: 24px; cursor: pointer; color: #1a73e8;" onclick="switchView('view-dashboard')">arrow_back</span>
             <h5 class="mb-0 fw-bold">Pengajuan Izin / Sakit</h5>
         </div>
         
         <div class="card border-0 shadow-sm rounded-4 p-4">
             <form id="form-izin" onsubmit="prosesIzin(event)">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Jenis Keterangan</label>
-                    <select id="izin-jenis" class="form-select rounded-3" required>
+                    <label class="form-label small fw-bold text-secondary">Jenis Keterangan</label>
+                    <select id="izin-jenis" class="form-select bg-light border-0 rounded-3 py-2" required>
                         <option value="">-- Pilih Jenis --</option>
                         <option value="Sakit">Sakit</option>
                         <option value="Izin">Izin Terencana</option>
@@ -184,30 +195,38 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Alasan / Keterangan</label>
-                    <textarea id="izin-alasan" class="form-control rounded-3" rows="3" placeholder="Tuliskan alasan dengan jelas..." required></textarea>
+                    <label class="form-label small fw-bold text-secondary">Alasan / Keterangan</label>
+                    <textarea id="izin-alasan" class="form-control bg-light border-0 rounded-3 py-2" rows="3" placeholder="Tuliskan alasan dengan jelas..." required></textarea>
                 </div>
                 <div class="mb-4">
-                    <label class="form-label small fw-bold">Bukti Foto / Surat (Opsional)</label>
-                    <input type="file" id="izin-file" class="form-control rounded-3" accept="image/*">
+                    <label class="form-label small fw-bold text-secondary">Bukti Foto / Surat (Opsional)</label>
+                    <input type="file" id="izin-file" class="form-control bg-light border-0 rounded-3 py-2" accept="image/*">
                     <small class="text-muted" style="font-size: 11px;">*Upload foto surat keterangan dokter atau bukti lainnya.</small>
                 </div>
-                <button type="submit" class="btn btn-warning w-100 py-2 rounded-3 fw-bold">KIRIM PENGAJUAN</button>
+                <button type="submit" class="btn btn-warning w-100 py-3 rounded-4 fw-bold shadow-sm text-dark">KIRIM PENGAJUAN</button>
             </form>
         </div>
     </div>
 
-    <!-- HALAMAN RIWAYAT -->
+    <!-- HALAMAN RIWAYAT DENGAN FILTER BULANAN -->
     <div id="view-riwayat" class="d-none min-vh-100 bg-light p-3 pb-5">
         <div class="d-flex align-items-center mb-4 mt-3">
-            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <span class="material-icons me-3 bg-white p-2 rounded-circle shadow-sm" style="font-size: 24px; cursor: pointer; color: #1a73e8;" onclick="switchView('view-dashboard')">arrow_back</span>
             <h5 class="mb-0 fw-bold">Riwayat Kehadiran</h5>
         </div>
+
+        <!-- Filter Bulanan (Disembunyikan saat awal) -->
+        <div id="filter-bulan-container" class="mb-3 d-none">
+            <select id="filter-bulan" class="form-select border-0 shadow-sm rounded-3 py-2 fw-medium text-primary" onchange="renderRiwayat()">
+                <option value="Semua">Semua Waktu</option>
+            </select>
+        </div>
         
+        <!-- Wadah Daftar Riwayat -->
         <div id="tempat-riwayat">
             <div class="text-center mt-5">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">Memuat data riwayat...</p>
+                <p class="mt-2 text-muted fw-medium">Menarik data riwayat...</p>
             </div>
         </div>
     </div>
@@ -215,46 +234,47 @@
     <!-- HALAMAN PROFIL -->
     <div id="view-profil" class="d-none min-vh-100 bg-light p-3 pb-5">
         <div class="d-flex align-items-center mb-4 mt-3">
-            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <span class="material-icons me-3 bg-white p-2 rounded-circle shadow-sm" style="font-size: 24px; cursor: pointer; color: #1a73e8;" onclick="switchView('view-dashboard')">arrow_back</span>
             <h5 class="mb-0 fw-bold">Profil Saya</h5>
         </div>
         
-        <div class="card border-0 shadow-sm rounded-4 p-4 text-center mb-3">
-            <span class="material-icons text-primary mb-2" style="font-size: 64px;">account_circle</span>
-            <h5 class="fw-bold mb-0" id="profil-nama">-</h5>
-            <p class="text-muted small mb-0" id="profil-nip">-</p>
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center mb-3 bg-white">
+            <span class="material-icons text-primary mb-2" style="font-size: 72px;">account_circle</span>
+            <h5 class="fw-bold mb-0 text-dark" id="profil-nama">-</h5>
+            <p class="text-primary fw-medium small mb-0 mt-1" id="profil-nip">-</p>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
+        <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden bg-white">
             <ul class="list-group list-group-flush">
-                <li class="list-group-item p-3">
-                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Pangkat</small>
-                    <span id="profil-pangkat">-</span>
+                <li class="list-group-item p-3 border-light">
+                    <small class="text-muted d-block fw-bold mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Pangkat</small>
+                    <span id="profil-pangkat" class="fw-medium text-dark">-</span>
                 </li>
-                <li class="list-group-item p-3">
-                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Golongan</small>
-                    <span id="profil-golongan">-</span>
+                <li class="list-group-item p-3 border-light">
+                    <small class="text-muted d-block fw-bold mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Golongan</small>
+                    <span id="profil-golongan" class="fw-medium text-dark">-</span>
                 </li>
-                <li class="list-group-item p-3">
-                    <small class="text-muted d-block fw-bold" style="font-size: 11px;">Jabatan / Tugas Tambahan</small>
-                    <span id="profil-jabatan">-</span>
+                <li class="list-group-item p-3 border-light">
+                    <small class="text-muted d-block fw-bold mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Jabatan / Tugas Tambahan</small>
+                    <span id="profil-jabatan" class="fw-medium text-dark">-</span>
                 </li>
             </ul>
         </div>
-        <p class="text-center text-muted mt-3 small">Jika ada data yang tidak sesuai, mohon hubungi Admin Tata Usaha.</p>
+        <p class="text-center text-muted mt-4 small"><span class="material-icons align-middle text-warning" style="font-size:16px;">warning</span> Jika data tidak sesuai, mohon hubungi Admin Tata Usaha.</p>
     </div>
 
     <!-- Library Peta Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // === PENTING: GANTI URL INI DENGAN URL WEB APP ANDA YANG BARU ===
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREY6hvd4wXjntsGXwhOLYpogwvYcCsE3FVoX1xy4J-mqF3exUl-mAKDPb5X5NsiJdHg/exec"; 
+        // === URL APPS SCRIPT ===
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyF7UXRrFu_JXfQfFSEG4dwhyYQXBcJvNxEM6plu9naBSNlnKrrtFiuB7aQhP5h1f-vvQ/exec"; 
 
         // Variabel Global
         let currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
         let streamVideo = null;
         let jenisAbsenAktif = "";
+        let globalRiwayat = []; // Menyimpan data riwayat mentah untuk filter
         
         // Variabel Peta
         let myMap = null;
@@ -262,64 +282,52 @@
         let kordinatLokasi = "Mencari lokasi...";
         let gpsWatcher = null; 
 
-        // --- FITUR AUTO LOGOUT 10 MENIT ---
+        // Auto Logout Timer
         let timeoutTimer;
-        const TEN_MINUTES = 10 * 60 * 1000; // 10 menit dalam milidetik
+        const TEN_MINUTES = 10 * 60 * 1000;
 
         function resetTimer() {
-            // Hanya aktifkan timer jika ada user yang login
             if(currentUser.nip !== "") {
                 clearTimeout(timeoutTimer);
                 timeoutTimer = setTimeout(() => {
-                    showCustomAlert("Sesi login Anda berakhir karena tidak ada aktivitas selama 10 menit.", 'info');
+                    showCustomAlert("Sesi berakhir karena tidak ada aktivitas.", 'info');
                     logout();
                 }, TEN_MINUTES);
             }
         }
 
-        // Pantau pergerakan jari layar guru untuk me-reset timer
         document.addEventListener('touchstart', resetTimer);
         document.addEventListener('click', resetTimer);
         document.addEventListener('scroll', resetTimer);
 
-
-        // --- FITUR MENGINGAT LOGIN (LOCAL STORAGE) ---
-        // Jalankan fungsi ini setiap kali aplikasi dibuka/di-refresh
         window.onload = function() {
             const savedUser = localStorage.getItem('guruLoginData');
-            
             if (savedUser) {
-                // Jika ditemukan data login yang tersimpan, langsung pakai dan masuk ke Dashboard
                 currentUser = JSON.parse(savedUser);
-                
                 document.getElementById('nama-guru').innerText = currentUser.nama;
                 document.getElementById('nip-guru').innerText = "NIP: " + currentUser.nip;
-                
                 switchView('view-dashboard');
-                resetTimer(); // Mulai timer 10 menit
+                resetTimer(); 
             } else {
-                // Jika tidak ada data tersimpan, tetap di halaman Login
                 switchView('view-login');
             }
         };
 
-        // Update Jam
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
         }, 1000);
 
-        // Fungsi Notifikasi Custom (Pengganti Alert)
         function showCustomAlert(pesan, tipe = 'info') {
             const ikon = document.getElementById('custom-alert-icon');
             if(tipe === 'error') {
                 ikon.innerText = 'error';
-                ikon.style.color = '#d93025'; // Merah
+                ikon.style.color = '#d93025'; 
             } else if (tipe === 'success') {
                 ikon.innerText = 'check_circle';
-                ikon.style.color = '#1e8e3e'; // Hijau
+                ikon.style.color = '#1e8e3e'; 
             } else {
                 ikon.innerText = 'info';
-                ikon.style.color = '#1a73e8'; // Biru
+                ikon.style.color = '#1a73e8'; 
             }
             document.getElementById('custom-alert-msg').innerText = pesan;
             document.getElementById('custom-alert').classList.remove('d-none');
@@ -331,17 +339,16 @@
             document.getElementById('custom-alert').classList.add('d-none');
         }
 
-        function toggleLoading(show) {
+        // Teks Loading Dinamis
+        function toggleLoading(show, message = "Memproses data...") {
+            document.getElementById('loading-text').innerText = message;
             document.getElementById('loading-overlay').classList.toggle('d-none', !show);
         }
 
         function switchView(viewId) {
-            document.getElementById('view-login').classList.add('d-none');
-            document.getElementById('view-dashboard').classList.add('d-none');
-            document.getElementById('view-kamera').classList.add('d-none');
-            document.getElementById('view-izin').classList.add('d-none'); 
-            document.getElementById('view-riwayat').classList.add('d-none'); 
-            document.getElementById('view-profil').classList.add('d-none'); 
+            ['view-login', 'view-dashboard', 'view-kamera', 'view-izin', 'view-riwayat', 'view-profil'].forEach(id => {
+                document.getElementById(id).classList.add('d-none');
+            });
             document.getElementById(viewId).classList.remove('d-none');
 
             if(viewId === 'view-dashboard') {
@@ -349,20 +356,20 @@
             }
         }
 
-        // --- INISIALISASI PETA & GPS ---
+        // --- PETA & GPS ---
         function initPetaDanGPS() {
             if(!myMap) {
-                myMap = L.map('map').setView([-0.789275, 113.921327], 5);
+                myMap = L.map('map', {zoomControl: false}).setView([-0.789275, 113.921327], 5);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '© OpenStreetMap'
+                    maxZoom: 19, attribution: '© OS'
                 }).addTo(myMap);
             }
             myMap.invalidateSize(); 
 
             if (navigator.geolocation) {
+                document.getElementById('gps-spinner').classList.remove('d-none');
                 document.getElementById('dashboard-info-lokasi').innerText = "Mencari sinyal GPS...";
-                document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-warning";
+                document.getElementById('dashboard-info-lokasi').className = "small mb-0 text-center fw-bold text-warning";
 
                 if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
 
@@ -372,8 +379,9 @@
                         const lng = position.coords.longitude;
                         kordinatLokasi = lat + ", " + lng;
 
-                        document.getElementById('dashboard-info-lokasi').innerHTML = "📍 Lokasi akurat ditemukan!";
-                        document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-success";
+                        document.getElementById('gps-spinner').classList.add('d-none');
+                        document.getElementById('dashboard-info-lokasi').innerHTML = "Lokasi akurat ditemukan!";
+                        document.getElementById('dashboard-info-lokasi').className = "small mb-0 text-center fw-bold text-success";
                         myMap.setView([lat, lng], 17);
 
                         if(myMarker) {
@@ -384,21 +392,22 @@
                     },
                     function(error) {
                         kordinatLokasi = "Akses GPS ditolak/Gagal";
-                        document.getElementById('dashboard-info-lokasi').innerHTML = "❌ Gagal mendapat lokasi (Aktifkan GPS)";
-                        document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-danger";
+                        document.getElementById('gps-spinner').classList.add('d-none');
+                        document.getElementById('dashboard-info-lokasi').innerHTML = "Gagal mendapat lokasi (Aktifkan GPS)";
+                        document.getElementById('dashboard-info-lokasi').className = "small mb-0 text-center fw-bold text-danger";
                     },
                     { enableHighAccuracy: true, maximumAge: 0 }
                 );
             }
         }
 
-        // --- PROSES LOGIN ---
+        // --- LOGIN ---
         function prosesLogin(event) {
             event.preventDefault();
             const nip = document.getElementById('input-nip').value;
             const password = document.getElementById('input-password').value;
 
-            toggleLoading(true);
+            toggleLoading(true, "Memverifikasi akun Anda...");
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -414,14 +423,12 @@
                     currentUser.golongan = data.golongan;
                     currentUser.jabatan = data.jabatan;
                     
-                    // Simpan data login ke memori HP (Local Storage)
                     localStorage.setItem('guruLoginData', JSON.stringify(currentUser));
 
                     document.getElementById('nama-guru').innerText = data.nama;
                     document.getElementById('nip-guru').innerText = "NIP: " + data.nip;
-                    
                     switchView('view-dashboard');
-                    resetTimer(); // Mulai timer auto-logout
+                    resetTimer(); 
                 } else {
                     showCustomAlert(data.message, 'error');
                 }
@@ -432,16 +439,15 @@
             });
         }
 
-        // --- FITUR KAMERA ---
+        // --- KAMERA & ABSEN ---
         function bukaKamera(jenis) {
             jenisAbsenAktif = jenis;
             document.getElementById('judul-kamera').innerText = "Absen " + jenis;
             
             if(kordinatLokasi === "Mencari lokasi...") {
-                showCustomAlert("Mohon tunggu sebentar, sedang mencari lokasi GPS Anda...", 'info');
+                showCustomAlert("Mohon tunggu sebentar, sedang mencari sinyal GPS Anda...", 'info');
                 return;
             }
-
             switchView('view-kamera');
 
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
@@ -465,7 +471,6 @@
             switchView('view-dashboard');
         }
 
-        // --- PROSES KIRIM ABSEN ---
         function prosesAbsen() {
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
@@ -473,24 +478,17 @@
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
             const fotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
             tutupKamera(); 
-            toggleLoading(true);
+            toggleLoading(true, "Mengirim data kehadiran...");
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({ 
-                    action: 'absen', 
-                    nip: currentUser.nip, 
-                    nama: currentUser.nama,
-                    pangkat: currentUser.pangkat,
-                    golongan: currentUser.golongan,
-                    jabatan: currentUser.jabatan,
-                    jenis: jenisAbsenAktif,
-                    lokasi: kordinatLokasi,
-                    foto: fotoBase64
+                    action: 'absen', nip: currentUser.nip, nama: currentUser.nama,
+                    pangkat: currentUser.pangkat, golongan: currentUser.golongan, jabatan: currentUser.jabatan,
+                    jenis: jenisAbsenAktif, lokasi: kordinatLokasi, foto: fotoBase64
                 })
             })
             .then(response => response.json())
@@ -504,21 +502,16 @@
             });
         }
 
-        // --- FITUR LOGOUT ---
         function logout() {
-            // Hapus data login dari memori HP
             localStorage.removeItem('guruLoginData');
-            
             currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
             document.getElementById('form-login').reset();
-            
             if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
-            clearTimeout(timeoutTimer); // Matikan timer
-            
+            clearTimeout(timeoutTimer); 
             switchView('view-login');
         }
 
-        // --- FITUR IZIN / SAKIT ---
+        // --- IZIN / SAKIT ---
         function bukaIzin() {
             document.getElementById('form-izin').reset();
             switchView('view-izin');
@@ -526,25 +519,16 @@
 
         function prosesIzin(event) {
             event.preventDefault();
-            
             const jenis = document.getElementById('izin-jenis').value;
             const alasan = document.getElementById('izin-alasan').value;
             const fileInput = document.getElementById('izin-file');
             
-            let fotoBase64 = "";
-            
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                if(file.size > 5 * 1024 * 1024) {
-                    showCustomAlert("Ukuran file terlalu besar! Maksimal 5MB.", 'error');
-                    return;
-                }
+                if(file.size > 5 * 1024 * 1024) { showCustomAlert("Ukuran file maksimal 5MB.", 'error'); return; }
 
                 const reader = new FileReader();
-                reader.onloadend = function() {
-                    fotoBase64 = reader.result;
-                    kirimDataIzin(jenis, alasan, fotoBase64);
-                }
+                reader.onloadend = function() { kirimDataIzin(jenis, alasan, reader.result); }
                 reader.readAsDataURL(file); 
             } else {
                 kirimDataIzin(jenis, alasan, "");
@@ -552,48 +536,42 @@
         }
 
         function kirimDataIzin(jenis, alasan, fotoBase64) {
-            toggleLoading(true);
+            toggleLoading(true, "Mengirim dokumen izin...");
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({ 
-                    action: 'izin', 
-                    nip: currentUser.nip, 
-                    nama: currentUser.nama,
-                    pangkat: currentUser.pangkat,
-                    golongan: currentUser.golongan,
-                    jabatan: currentUser.jabatan,
-                    jenis_izin: jenis,
-                    alasan: alasan,
-                    foto: fotoBase64
+                    action: 'izin', nip: currentUser.nip, nama: currentUser.nama,
+                    pangkat: currentUser.pangkat, golongan: currentUser.golongan, jabatan: currentUser.jabatan,
+                    jenis_izin: jenis, alasan: alasan, foto: fotoBase64
                 })
             })
             .then(response => response.json())
             .then(data => {
                 toggleLoading(false);
                 showCustomAlert(data.message, data.status);
-                if(data.status === 'success') {
-                    switchView('view-dashboard');
-                }
+                if(data.status === 'success') switchView('view-dashboard');
             })
             .catch(error => {
                 toggleLoading(false);
-                showCustomAlert("Gagal mengirim pengajuan. Periksa koneksi internet Anda.", 'error');
+                showCustomAlert("Gagal mengirim pengajuan.", 'error');
             });
         }
 
-        // --- FITUR RIWAYAT ---
+        // --- RIWAYAT DENGAN FILTER ---
         function bukaRiwayat() {
             switchView('view-riwayat');
-            document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Mencari data riwayat...</p></div>';
+            document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted fw-medium">Menarik data riwayat...</p></div>';
+            document.getElementById('filter-bulan-container').classList.add('d-none');
             
             fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'riwayat', nip: currentUser.nip })
+                method: 'POST', body: JSON.stringify({ action: 'riwayat', nip: currentUser.nip })
             })
             .then(response => response.json())
             .then(data => {
                 if(data.status === 'success') {
-                    tampilkanRiwayat(data.data);
+                    globalRiwayat = data.data;
+                    siapkanFilterBulan();
+                    renderRiwayat();
                 } else {
                     document.getElementById('tempat-riwayat').innerHTML = '<p class="text-center text-danger mt-5">Gagal memuat riwayat.</p>';
                 }
@@ -603,40 +581,61 @@
             });
         }
 
-        function tampilkanRiwayat(dataArray) {
+        function siapkanFilterBulan() {
+            const filterSelect = document.getElementById('filter-bulan');
+            filterSelect.innerHTML = '<option value="Semua">Semua Waktu</option>';
+            let bulanUnik = [];
+            
+            globalRiwayat.forEach(item => {
+                // Format dari server biasanya: "17 May 2026, 07:15"
+                let parts = item.waktu.split(' ');
+                if(parts.length >= 3) {
+                    let blnThn = parts[1] + ' ' + parts[2].replace(',', '');
+                    if(!bulanUnik.includes(blnThn)) bulanUnik.push(blnThn);
+                }
+            });
+
+            bulanUnik.forEach(bln => { filterSelect.innerHTML += `<option value="${bln}">${bln}</option>`; });
+            if(globalRiwayat.length > 0) document.getElementById('filter-bulan-container').classList.remove('d-none');
+        }
+
+        function renderRiwayat() {
+            const filterValue = document.getElementById('filter-bulan').value;
             const container = document.getElementById('tempat-riwayat');
             
-            if(dataArray.length === 0) {
-                container.innerHTML = `
-                <div class="text-center mt-5">
-                    <span class="material-icons text-muted" style="font-size: 64px;">event_busy</span>
-                    <p class="mt-2 text-muted">Belum ada catatan kehadiran.</p>
-                </div>`;
+            let dataDitampilkan = globalRiwayat;
+            if(filterValue !== "Semua") {
+                dataDitampilkan = globalRiwayat.filter(item => item.waktu.includes(filterValue));
+            }
+
+            if(dataDitampilkan.length === 0) {
+                container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 64px;">event_busy</span><p class="mt-2 text-muted fw-medium">Tidak ada catatan kehadiran.</p></div>`;
                 return;
             }
 
             let htmlStr = "";
-            dataArray.forEach(item => {
+            dataDitampilkan.forEach(item => {
                 let badgeClass = item.jenis === "Masuk" ? "bg-success" : "bg-danger";
+                let iconLokasi = item.lokasi.includes("Gagal") || item.lokasi.includes("Mencari") ? "location_off" : "location_on";
+                let textLokasi = iconLokasi === "location_off" ? "Lokasi tidak direkam" : item.lokasi;
+                
                 htmlStr += `
-                <div class="card border-0 shadow-sm mb-3 rounded-4">
+                <div class="card border-0 shadow-sm mb-3 rounded-4 bg-white" style="animation: slideIn 0.3s ease-out;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge ${badgeClass} px-3 py-2 rounded-pill">${item.jenis}</span>
-                            <small class="text-muted fw-bold">${item.waktu}</small>
+                            <span class="badge ${badgeClass} px-3 py-2 rounded-pill shadow-sm">${item.jenis}</span>
+                            <small class="text-dark fw-bold">${item.waktu}</small>
                         </div>
-                        <p class="mb-0 small text-secondary"><span class="material-icons align-middle" style="font-size:16px;">location_on</span> ${item.lokasi}</p>
+                        <p class="mb-0 small text-secondary fw-medium"><span class="material-icons align-middle text-muted me-1" style="font-size:16px;">${iconLokasi}</span> ${textLokasi}</p>
                     </div>
-                </div>
-                `;
+                </div>`;
             });
             container.innerHTML = htmlStr;
         }
 
-        // --- FITUR PROFIL ---
         function bukaProfil() {
             document.getElementById('profil-nama').innerText = currentUser.nama;
-            document.getElementById('profil-nip').innerText = "NIP: " + currentUser.nip;
+            document.getElementById('profil-nip').innerText = currentUser.nip;
             document.getElementById('profil-pangkat').innerText = currentUser.pangkat || "-";
             document.getElementById('profil-golongan').innerText = currentUser.golongan || "-";
             document.getElementById('profil-jabatan').innerText = currentUser.jabatan || "-";
