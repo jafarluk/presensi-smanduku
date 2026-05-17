@@ -93,7 +93,6 @@
         <div class="header-bg">
             <div class="d-flex justify-content-between align-items-center">
                 <div onclick="bukaProfil()" style="cursor: pointer;">
-                    <!-- Sapaan "Selamat Datang" yang baru -->
                     <p class="mb-0 small text-white-50">Selamat Datang,</p>
                     <h5 class="mb-0 fw-bold" id="nama-guru">Nama Guru</h5>
                     <small class="text-white-50" id="nip-guru">NIP: -</small>
@@ -249,8 +248,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // === URL APPS SCRIPT ANDA ===
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJLpHa5Ac3eu0kU4i_1pzOE7HzgJVyMQsgdMnc79-4SohJ2LrxmadkzvjQK1NCWF02yw/exec"; 
+        // === PENTING: GANTI URL INI DENGAN URL WEB APP ANDA YANG BARU ===
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREY6hvd4wXjntsGXwhOLYpogwvYcCsE3FVoX1xy4J-mqF3exUl-mAKDPb5X5NsiJdHg/exec"; 
 
         // Variabel Global
         let currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
@@ -263,12 +262,53 @@
         let kordinatLokasi = "Mencari lokasi...";
         let gpsWatcher = null; 
 
+        // --- FITUR AUTO LOGOUT 10 MENIT ---
+        let timeoutTimer;
+        const TEN_MINUTES = 10 * 60 * 1000; // 10 menit dalam milidetik
+
+        function resetTimer() {
+            // Hanya aktifkan timer jika ada user yang login
+            if(currentUser.nip !== "") {
+                clearTimeout(timeoutTimer);
+                timeoutTimer = setTimeout(() => {
+                    showCustomAlert("Sesi login Anda berakhir karena tidak ada aktivitas selama 10 menit.", 'info');
+                    logout();
+                }, TEN_MINUTES);
+            }
+        }
+
+        // Pantau pergerakan jari layar guru untuk me-reset timer
+        document.addEventListener('touchstart', resetTimer);
+        document.addEventListener('click', resetTimer);
+        document.addEventListener('scroll', resetTimer);
+
+
+        // --- FITUR MENGINGAT LOGIN (LOCAL STORAGE) ---
+        // Jalankan fungsi ini setiap kali aplikasi dibuka/di-refresh
+        window.onload = function() {
+            const savedUser = localStorage.getItem('guruLoginData');
+            
+            if (savedUser) {
+                // Jika ditemukan data login yang tersimpan, langsung pakai dan masuk ke Dashboard
+                currentUser = JSON.parse(savedUser);
+                
+                document.getElementById('nama-guru').innerText = currentUser.nama;
+                document.getElementById('nip-guru').innerText = "NIP: " + currentUser.nip;
+                
+                switchView('view-dashboard');
+                resetTimer(); // Mulai timer 10 menit
+            } else {
+                // Jika tidak ada data tersimpan, tetap di halaman Login
+                switchView('view-login');
+            }
+        };
+
         // Update Jam
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
         }, 1000);
 
-        // Fungsi Notifikasi Custom
+        // Fungsi Notifikasi Custom (Pengganti Alert)
         function showCustomAlert(pesan, tipe = 'info') {
             const ikon = document.getElementById('custom-alert-icon');
             if(tipe === 'error') {
@@ -374,9 +414,14 @@
                     currentUser.golongan = data.golongan;
                     currentUser.jabatan = data.jabatan;
                     
-                    document.getElementById('nama-guru').innerText = data.nama; // Dihapus kata Halo nya
+                    // Simpan data login ke memori HP (Local Storage)
+                    localStorage.setItem('guruLoginData', JSON.stringify(currentUser));
+
+                    document.getElementById('nama-guru').innerText = data.nama;
                     document.getElementById('nip-guru').innerText = "NIP: " + data.nip;
+                    
                     switchView('view-dashboard');
+                    resetTimer(); // Mulai timer auto-logout
                 } else {
                     showCustomAlert(data.message, 'error');
                 }
@@ -459,10 +504,17 @@
             });
         }
 
+        // --- FITUR LOGOUT ---
         function logout() {
+            // Hapus data login dari memori HP
+            localStorage.removeItem('guruLoginData');
+            
             currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
             document.getElementById('form-login').reset();
+            
             if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
+            clearTimeout(timeoutTimer); // Matikan timer
+            
             switchView('view-login');
         }
 
