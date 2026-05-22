@@ -359,8 +359,8 @@
             if(!myMap) {
                 myMap = L.map('map').setView([-0.789275, 113.921327], 5);
                 
-                // MENGGANTI TILE LAYER KE ESRI (LEBIH AMAN UNTUK APK)
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                // MENGGANTI TILE LAYER KE ESRI SATELLITE (MODE SATELIT)
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
                     attribution: '© Esri'
                 }).addTo(myMap);
