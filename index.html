@@ -67,30 +67,28 @@
     </div>
 
     <!-- HALAMAN LOGIN -->
-    <div id="view-login" class="container min-vh-100 d-flex align-items-center">
-        <div class="row justify-content-center w-100">
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card login-card text-center">
-                    <div class="mb-4">
-                        <!-- Mengganti ikon bawaan dengan logo sekolah (Ditambah fetchpriority) -->
-                        <img src="icon.png" alt="Logo SMAN 2 Kulisusu" style="width: 90px; height: auto;" class="mb-3 drop-shadow" fetchpriority="high" loading="eager">
-                        
-                        <h6 class="mt-2 fw-bold mb-0 text-muted">PRESENSI</h6>
-                        <h4 class="fw-bold">SMAN 2 KULISUSU</h4>
-                        <p class="text-muted small mt-2">Silakan login untuk mencatat kehadiran</p>
-                    </div>
-                    <form id="form-login" onsubmit="prosesLogin(event)">
-                        <div class="mb-3 text-start">
-                            <label class="form-label small fw-bold">NIP</label>
-                            <input type="text" id="input-nip" class="form-control" placeholder="Contoh: 123456" required>
-                        </div>
-                        <div class="mb-4 text-start">
-                            <label class="form-label small fw-bold">Kata Sandi</label>
-                            <input type="password" id="input-password" class="form-control" placeholder="Masukkan kata sandi" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">MASUK</button>
-                    </form>
+    <div id="view-login" class="min-vh-100 d-flex justify-content-center align-items-center p-3">
+        <div class="w-100" style="max-width: 400px;">
+            <div class="card login-card text-center">
+                <div class="mb-4">
+                    <!-- Mengganti ikon bawaan dengan logo sekolah (Ditambah fetchpriority) -->
+                    <img src="icon.png" alt="Logo SMAN 2 Kulisusu" style="width: 90px; height: auto;" class="mb-3 drop-shadow" fetchpriority="high" loading="eager">
+                    
+                    <h6 class="mt-2 fw-bold mb-0 text-muted">PRESENSI</h6>
+                    <h4 class="fw-bold">SMAN 2 KULISUSU</h4>
+                    <p class="text-muted small mt-2">Silakan login untuk mencatat kehadiran</p>
                 </div>
+                <form id="form-login" onsubmit="prosesLogin(event)">
+                    <div class="mb-3 text-start">
+                        <label class="form-label small fw-bold">NIP</label>
+                        <input type="text" id="input-nip" class="form-control" placeholder="Contoh: 123456" required>
+                    </div>
+                    <div class="mb-4 text-start">
+                        <label class="form-label small fw-bold">Kata Sandi</label>
+                        <input type="password" id="input-password" class="form-control" placeholder="Masukkan kata sandi" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">MASUK</button>
+                </form>
             </div>
         </div>
     </div>
@@ -356,13 +354,15 @@
             }
         }
 
-        // --- INISIALISASI PETA & GPS ---
+        // --- INISIALISASI PETA & GPS (UPDATED ESRI MAPS) ---
         function initPetaDanGPS() {
             if(!myMap) {
                 myMap = L.map('map').setView([-0.789275, 113.921327], 5);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                
+                // MENGGANTI TILE LAYER KE ESRI (LEBIH AMAN UNTUK APK)
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
-                    attribution: '© OpenStreetMap'
+                    attribution: '© Esri'
                 }).addTo(myMap);
             }
             myMap.invalidateSize(); 
@@ -591,7 +591,7 @@
         // --- FITUR RIWAYAT ---
         function bukaRiwayat() {
             switchView('view-riwayat');
-            document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Mencari data riwayat...</p></div>';
+            document.getElementById('tempat-riwayat').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Memuat data riwayat...</p></div>';
             
             fetch(SCRIPT_URL, {
                 method: 'POST',
