@@ -16,9 +16,6 @@
     <!-- Library Peta Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <!-- Library Face-API.js untuk Deteksi Wajah -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #f0f2f5; }
         
@@ -49,11 +46,6 @@
         /* CSS Kamera (Layar cermin agar gerakan pas, tapi hasil foto tidak terbalik) */
         #kamera-video { transform: scaleX(-1) !important; -webkit-transform: scaleX(-1) !important; }
         
-        /* Panduan Wajah (Face Guide) */
-        .camera-wrapper { position: relative; width: 100%; max-width: 400px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-        .camera-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: center; align-items: center; z-index: 5; }
-        .face-guide { width: 220px; height: 280px; border: 3px dashed rgba(255, 255, 255, 0.9); border-radius: 50%; box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.45); }
-
         /* Utilities */
         .d-none { display: none !important; }
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -176,22 +168,17 @@
 
     <!-- HALAMAN KAMERA -->
     <div id="view-kamera" class="d-none min-vh-100 bg-dark text-white d-flex flex-column align-items-center justify-content-center p-3">
-        <h4 id="judul-kamera" class="mb-2 fw-bold">Absen</h4>
-        <p class="small text-white-50 text-center mb-1">Posisikan wajah Anda di dalam lingkaran</p>
-        <div id="status-wajah" class="mb-3 fw-bold text-warning small text-center">Menyiapkan AI pendeteksi wajah...</div>
+        <h4 id="judul-kamera" class="mb-3 fw-bold">Absen</h4>
         
-        <div class="camera-wrapper">
-            <video id="kamera-video" class="w-100" style="object-fit: cover; min-height: 400px;" autoplay playsinline></video>
-            <div class="camera-overlay">
-                <div class="face-guide"></div>
-            </div>
+        <div class="position-relative w-100" style="max-width: 400px;">
+            <video id="kamera-video" class="w-100 rounded-3 shadow" autoplay playsinline></video>
             <canvas id="kamera-canvas" class="d-none"></canvas>
         </div>
         
         <div class="mt-4 text-center w-100" style="max-width: 400px;">
             <div class="d-flex gap-2">
                 <button class="btn btn-secondary w-50 py-2 rounded-3 fw-bold" onclick="tutupKamera()">BATAL</button>
-                <button id="btn-capture" class="btn btn-success w-50 py-2 rounded-3 fw-bold" onclick="prosesAbsen()" disabled>
+                <button id="btn-capture" class="btn btn-success w-50 py-2 rounded-3 fw-bold" onclick="prosesAbsen()">
                     <span class="material-icons align-middle me-1">photo_camera</span> FOTO
                 </button>
             </div>
@@ -288,8 +275,6 @@
         let currentUser = { nama: "", nip: "", pangkat: "", golongan: "", jabatan: "" };
         let streamVideo = null;
         let jenisAbsenAktif = "";
-        let faceDetectionInterval = null;
-        let isFaceDetectionLoaded = false;
         
         // Variabel Peta
         let myMap = null;
@@ -470,26 +455,9 @@
         }
 
         // --- FITUR KAMERA ---
-        async function muatModelWajah() {
-            if(isFaceDetectionLoaded) return;
-            try {
-                // Mengambil model AI langsung dari public CDN
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-                isFaceDetectionLoaded = true;
-            } catch (err) {
-                console.error("Gagal memuat model wajah:", err);
-                document.getElementById('status-wajah').innerText = "⚠️ Gagal memuat AI. Lanjutkan tanpa deteksi wajah.";
-                document.getElementById('status-wajah').className = "mb-3 fw-bold text-danger small text-center";
-                document.getElementById('btn-capture').disabled = false; // Buka kunci sebagai cadangan jika AI gagal dimuat
-            }
-        }
-
-        async function bukaKamera(jenis) {
+        function bukaKamera(jenis) {
             jenisAbsenAktif = jenis;
             document.getElementById('judul-kamera').innerText = "Absen " + jenis;
-            document.getElementById('btn-capture').disabled = true;
-            document.getElementById('status-wajah').innerText = "Menyiapkan AI pendeteksi wajah...";
-            document.getElementById('status-wajah').className = "mb-3 fw-bold text-warning small text-center";
             
             if(kordinatLokasi === "Mencari lokasi...") {
                 showCustomAlert("Mohon tunggu sebentar, sedang mencari lokasi GPS Anda...", 'info');
@@ -497,57 +465,18 @@
             }
 
             switchView('view-kamera');
-            toggleLoading(true);
-
-            // Memuat model wajah sebelum menyalakan kamera
-            await muatModelWajah();
 
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
                 .then(function(stream) {
-                    toggleLoading(false);
                     streamVideo = stream;
                     const video = document.getElementById('kamera-video');
                     video.srcObject = stream;
-                    
-                    // Mulai deteksi wajah saat video mulai berjalan
-                    if(isFaceDetectionLoaded) {
-                        document.getElementById('status-wajah').innerText = "Mendeteksi wajah...";
-                        video.onplay = () => jalankanDeteksiWajah();
-                    }
-                    
                     video.play();
                 })
                 .catch(function(err) {
-                    toggleLoading(false);
                     showCustomAlert("Akses kamera ditolak atau perangkat tidak mendukung.", 'error');
                     tutupKamera();
                 });
-        }
-
-        function jalankanDeteksiWajah() {
-            const video = document.getElementById('kamera-video');
-            const btnCapture = document.getElementById('btn-capture');
-            const statusWajah = document.getElementById('status-wajah');
-
-            if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-
-            // Cek keberadaan wajah setiap 1 detik
-            faceDetectionInterval = setInterval(async () => {
-                if(!streamVideo) {
-                    clearInterval(faceDetectionInterval);
-                    return;
-                }
-                const deteksi = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
-                if (deteksi.length > 0) {
-                    statusWajah.innerText = "✅ Wajah terdeteksi. Silakan foto.";
-                    statusWajah.className = "mb-3 fw-bold text-success small text-center";
-                    btnCapture.disabled = false;
-                } else {
-                    statusWajah.innerText = "❌ Wajah tidak terdeteksi. Arahkan ke wajah Anda.";
-                    statusWajah.className = "mb-3 fw-bold text-danger small text-center";
-                    btnCapture.disabled = true;
-                }
-            }, 1000);
         }
 
         function tutupKamera() {
@@ -555,18 +484,11 @@
                 streamVideo.getTracks().forEach(track => track.stop());
                 streamVideo = null;
             }
-            if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-            const video = document.getElementById('kamera-video');
-            video.onplay = null; // Hapus event listener
-            
             switchView('view-dashboard');
         }
 
         // --- PROSES KIRIM ABSEN ---
         function prosesAbsen() {
-            // Hentikan deteksi seketika setelah tombol foto ditekan
-            if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
             canvas.width = video.videoWidth;
@@ -749,4 +671,3 @@
     </script>
 </body>
 </html>
-<!-- update -->
