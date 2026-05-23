@@ -283,6 +283,12 @@
 
         window.onload = function() {
             updateOfflineStatusDisplay(); // Cek status koneksi pertama kali
+            
+            // TAMBAHAN: Munculkan pesan popup jika buka aplikasi tanpa internet
+            if (!navigator.onLine) {
+                showCustomAlert("Aplikasi dibuka tanpa koneksi internet (Mode Offline). Anda tetap bisa melakukan absen.", 'warning');
+            }
+
             const savedUser = localStorage.getItem('guruLoginData');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
@@ -460,6 +466,11 @@
             if(kordinatLokasi === "Mencari lokasi...") {
                 showCustomAlert("Mohon tunggu sebentar, sedang mencari lokasi GPS Anda...", 'info');
                 return;
+            }
+
+            // TAMBAHAN: Pesan peringatan saat masuk menu absen tanpa internet
+            if (!navigator.onLine) {
+                showCustomAlert("Anda sedang OFFLINE. Silakan lanjut ambil foto, data absen Anda akan disimpan di HP sementara waktu.", 'warning');
             }
 
             switchView('view-kamera');
