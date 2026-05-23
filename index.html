@@ -466,7 +466,7 @@
                 return;
             }
 
-            toggleLoading(true, "Memverifikasi akun Anda...");
+            toggleLoading(true, "Izin! Memverifikasi akun Anda...");
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'login', nip: nip, password: password })
