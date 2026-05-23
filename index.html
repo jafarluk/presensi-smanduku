@@ -99,6 +99,13 @@
 
         <div class="container px-3">
             
+            <!-- STATUS KONEKSI INTERNET -->
+            <div id="offline-status-indicator" class="d-none alert alert-danger text-center small p-2 mb-3 mt-n2 shadow-sm rounded-3 position-relative z-3">
+                <span class="material-icons align-middle text-danger me-1" style="font-size: 18px;">wifi_off</span>
+                <strong>Anda sedang Offline.</strong><br>
+                Fitur absen tetap bisa digunakan dan akan disimpan di HP. Jangan Lupa SINKRON saat terhubung ke internet.
+            </div>
+
             <!-- PANEL OFFLINE SYNC -->
             <div id="offline-badge" class="d-none alert alert-warning text-center small p-2 mb-3 mt-n2 shadow-sm rounded-3 position-relative z-3">
                 <span class="material-icons align-middle text-warning me-1" style="font-size: 18px;">cloud_off</span>
@@ -275,6 +282,7 @@
         document.addEventListener('scroll', resetTimer);
 
         window.onload = function() {
+            updateOfflineStatusDisplay(); // Cek status koneksi pertama kali
             const savedUser = localStorage.getItem('guruLoginData');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
@@ -290,10 +298,28 @@
 
         // Memantau status internet HP (Otomatis sinkron jika online)
         window.addEventListener('online', function() {
+            updateOfflineStatusDisplay();
             if(antreanOffline.length > 0 && currentUser.nip !== "") {
                 sinkronisasiOffline();
             }
         });
+        
+        // Memantau jika internet terputus
+        window.addEventListener('offline', function() {
+            updateOfflineStatusDisplay();
+        });
+
+        // --- UPDATE TAMPILAN STATUS OFFLINE PADA DASHBOARD ---
+        function updateOfflineStatusDisplay() {
+            const indicator = document.getElementById('offline-status-indicator');
+            if (indicator) {
+                if (!navigator.onLine) {
+                    indicator.classList.remove('d-none');
+                } else {
+                    indicator.classList.add('d-none');
+                }
+            }
+        }
 
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
