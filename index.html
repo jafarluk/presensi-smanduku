@@ -337,7 +337,20 @@
                 currentUser = JSON.parse(savedUser);
                 document.getElementById('nama-guru').innerText = currentUser.nama;
                 document.getElementById('nip-guru').innerText = "NIP: " + currentUser.nip;
-                switchView('view-dashboard');
+                
+                // --- PERBAIKAN UTAMA: BACA JEJAK HALAMAN TERAKHIR ---
+                let halamanTujuan = 'view-dashboard'; // Default ke dashboard
+                if (window.location.hash) {
+                    let jejakHash = window.location.hash.substring(1); // Menghapus tanda #
+                    // Pastikan halamannya ada, lalu jadikan tujuan
+                    if (document.getElementById(jejakHash)) {
+                        halamanTujuan = jejakHash;
+                    }
+                }
+                
+                // Buka halaman sesuai jejak terakhir
+                switchView(halamanTujuan, true); 
+                
                 updateOfflineBadge(); 
 
                 mintaIzinNotifikasi(); // Meminta izin notif dari HP guru saat masuk
@@ -346,8 +359,14 @@
                 if (navigator.onLine && currentUser.password) {
                     verifikasiBackground();
                 }
+                
+                // Jika halaman tujuan adalah riwayat, otomatis muat ulang data riwayatnya
+                if (halamanTujuan === 'view-riwayat') {
+                    bukaRiwayat();
+                }
+                
             } else {
-                switchView('view-login');
+                switchView('view-login', true);
             }
         };
 
