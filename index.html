@@ -30,7 +30,7 @@
         .d-none { display: none !important; }
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #custom-alert { z-index: 10000; }
-        #kamera-video, #preview-image { transform: scaleX(-1) !important; -webkit-transform: scaleX(-1) !important; aspect-ratio: 1 / 1; object-fit: cover; }
+        #kamera-video, #preview-image { transform: scaleX(-1) !important; -webkit-transform: scaleX(-1) !important; aspect-ratio: 3 / 4; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -586,24 +586,37 @@
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
             
-            // 1. Cari ukuran sisi terkecil untuk membuat persegi (biasanya tinggi video)
-            const size = Math.min(video.videoWidth, video.videoHeight);
+            // --- ATUR RASIO TARGET DI SINI ---
+            // Contoh 3/4 untuk potret vertikal, atau 4/3 untuk lanskap horizontal
+            const targetRatio = 3 / 4; 
             
-            // 2. Hitung titik mulai (X dan Y) agar potongan pas di tengah (Center Crop)
-            const startX = (video.videoWidth - size) / 2;
-            const startY = (video.videoHeight - size) / 2;
-            
-            // 3. Atur canvas menjadi persegi murni
-            canvas.width = size;
-            canvas.height = size;
+            const videoRatio = video.videoWidth / video.videoHeight;
+            let cropWidth, cropHeight, startX, startY;
+
+            // Logika Center Crop otomatis menyesuaikan rasio target
+            if (videoRatio > targetRatio) {
+                // Video aslinya terlalu lebar -> Potong Kiri dan Kanan
+                cropHeight = video.videoHeight;
+                cropWidth = cropHeight * targetRatio;
+                startX = (video.videoWidth - cropWidth) / 2;
+                startY = 0;
+            } else {
+                // Video aslinya terlalu tinggi -> Potong Atas dan Bawah
+                cropWidth = video.videoWidth;
+                cropHeight = cropWidth / targetRatio;
+                startX = 0;
+                startY = (video.videoHeight - cropHeight) / 2;
+            }
+
+            // Atur ukuran akhir kanvas sesuai hasil potongan
+            canvas.width = cropWidth;
+            canvas.height = cropHeight;
             
             const context = canvas.getContext('2d');
             
-            // 4. Gambar potongan tengah video ke dalam canvas persegi
-            // Format: drawImage(sumber, xAwal, yAwal, lebarPotong, tinggiPotong, xCanvas, yCanvas, lebarCanvas, tinggiCanvas)
-            context.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+            // Gambar dan potong video ke dalam kanvas
+            context.drawImage(video, startX, startY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
             
-            // 5. Ubah menjadi gambar kualitas HD (92%)
             currentFotoBase64 = canvas.toDataURL('image/jpeg', 0.92);
 
             if (streamVideo) {
