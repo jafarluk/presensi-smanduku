@@ -539,7 +539,7 @@
                 showCustomAlert("Terjadi kesalahan koneksi internet.", 'error');
             });
         }
-
+        // --- UPDATE FUNGSI BUKA KAMERA ---
         function bukaKamera(jenis) {
             jenisAbsenAktif = jenis;
             document.getElementById('judul-kamera').innerText = "Absen " + jenis;
@@ -554,8 +554,14 @@
             }
 
             switchView('view-kamera');
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            // Meminta akses kamera dengan resolusi tinggi (HD 720p)
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "user", 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 } 
+                } 
+            })
                 .then(function(stream) {
                     streamVideo = stream;
                     const video = document.getElementById('kamera-video');
@@ -575,16 +581,17 @@
             }
             switchView('view-dashboard');
         }
-
+        // --- UPDATE FUNGSI PROSES ABSEN (KUALITAS 92%) ---
         function prosesAbsen() {
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
+            // Ukuran canvas disesuaikan dengan ukuran asli video dari kamera
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
-            
+            // Kualitas foto ditingkatkan menjadi 0.92 (92%)
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            currentFotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            currentFotoBase64 = canvas.toDataURL('image/jpeg', 0.92);
 
             if (streamVideo) {
                 streamVideo.getTracks().forEach(track => track.stop());
