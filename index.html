@@ -350,7 +350,7 @@
                 
                 // Buka halaman sesuai jejak terakhir
                 switchView(halamanTujuan, true); 
-                
+                history.replaceState({ halaman: halamanTujuan }, "", "#" + halamanTujuan);
                 updateOfflineBadge(); 
 
                 mintaIzinNotifikasi(); // Meminta izin notif dari HP guru saat masuk
@@ -498,6 +498,14 @@ function switchView(viewId, isSistemBack = false) {
             // Jika ada riwayat sebelumnya, perintahkan aplikasi mundur ke halaman tersebut
             if (event.state && event.state.halaman) {
                 switchView(event.state.halaman, true);
+            } else if (window.location.hash) {
+                // KODE BARU: Jika browser "lupa" karena habis buka link luar, baca dari URL-nya
+                let jejakHash = window.location.hash.substring(1);
+                if (document.getElementById(jejakHash)) {
+                    switchView(jejakHash, true);
+                } else {
+                    switchView('view-dashboard', true);
+                }
             } else {
                 // Jika history kosong (sudah di paling awal), arahkan ke dashboard atau login
                 if (currentUser.nip !== "") {
