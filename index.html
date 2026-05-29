@@ -30,7 +30,7 @@
         .d-none { display: none !important; }
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #custom-alert { z-index: 10000; }
-        #kamera-video, #preview-image { transform: scaleX(-1) !important; -webkit-transform: scaleX(-1) !important; }
+        #kamera-video, #preview-image { transform: scaleX(-1) !important; -webkit-transform: scaleX(-1) !important; aspect-ratio: 1 / 1; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -585,12 +585,25 @@
         function prosesAbsen() {
             const video = document.getElementById('kamera-video');
             const canvas = document.getElementById('kamera-canvas');
-            // Ukuran canvas disesuaikan dengan ukuran asli video dari kamera
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            
+            // 1. Cari ukuran sisi terkecil untuk membuat persegi (biasanya tinggi video)
+            const size = Math.min(video.videoWidth, video.videoHeight);
+            
+            // 2. Hitung titik mulai (X dan Y) agar potongan pas di tengah (Center Crop)
+            const startX = (video.videoWidth - size) / 2;
+            const startY = (video.videoHeight - size) / 2;
+            
+            // 3. Atur canvas menjadi persegi murni
+            canvas.width = size;
+            canvas.height = size;
+            
             const context = canvas.getContext('2d');
-            // Kualitas foto ditingkatkan menjadi 0.92 (92%)
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 4. Gambar potongan tengah video ke dalam canvas persegi
+            // Format: drawImage(sumber, xAwal, yAwal, lebarPotong, tinggiPotong, xCanvas, yCanvas, lebarCanvas, tinggiCanvas)
+            context.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+            
+            // 5. Ubah menjadi gambar kualitas HD (92%)
             currentFotoBase64 = canvas.toDataURL('image/jpeg', 0.92);
 
             if (streamVideo) {
