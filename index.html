@@ -50,6 +50,13 @@
         <p class="mt-3 fw-bold text-primary" id="loading-text">Izin! Memproses data...</p>
     </div>
 
+    <div id="modal-foto" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 flex-column justify-content-center align-items-center" style="z-index: 10500; backdrop-filter: blur(5px);">
+        <div class="w-100 p-4 text-end position-absolute top-0">
+            <span class="material-icons text-white bg-dark bg-opacity-50 rounded-circle p-1" style="font-size: 32px; cursor: pointer;" onclick="tutupFotoPenuh()">close</span>
+        </div>
+        <img id="img-foto-full" src="" style="max-width: 90%; max-height: 80vh; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+    </div>
+    
     <!-- HALAMAN LOGIN -->
     <div id="view-login" class="min-vh-100 d-flex justify-content-center align-items-center p-3">
         <div class="w-100" style="max-width: 400px;">
@@ -495,6 +502,13 @@ function switchView(viewId, isSistemBack = false) {
                 streamVideo = null;
             }
 
+            // CEK APAKAH FOTO FULL SEDANG TERBUKA
+            const modalFoto = document.getElementById('modal-foto');
+            if (modalFoto && modalFoto.classList.contains('d-flex')) {
+                tutupFotoPenuh(true); // Tutup fotonya saja
+                return; // Berhenti di sini, jangan pindah halaman
+            }
+            
             // Jika ada riwayat sebelumnya, perintahkan aplikasi mundur ke halaman tersebut
             if (event.state && event.state.halaman) {
                 switchView(event.state.halaman, true);
@@ -900,21 +914,22 @@ function switchView(viewId, isSistemBack = false) {
                 let badgeClass = item.jenis === "Masuk" ? "bg-success" : (item.jenis === "Pulang" ? "bg-danger" : "bg-warning text-dark");
                 
                 let fotoHtml = "";
-                if (item.foto && item.foto.startsWith("http")) {
-                    let thumbUrl = item.foto;
+            if (item.foto && item.foto.startsWith("http")) {
+                let thumbUrl = item.foto;
+                let fullUrl = item.foto; // Tambahan variabel untuk foto ukuran besar
                     
-                    // Mengambil ID Foto dari link Google Drive
-                    const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                        // MENGGUNAKAN JALUR "THUMBNAIL" AGAR GOOGLE DRIVE TIDAK MEMBLOKIR GAMBAR
+                 // Mengambil ID Foto dari link Google Drive
+                 const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                 if (match && match[1]) {
                         thumbUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200-h200`;
+                        // Kita buat link ukuran besar (1000px) untuk modal foto
+                        fullUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000-h1000`;
                     }
                     
+                    // Tag <a> dihapus, diganti dengan onclick yang memicu modal pop-up
                     fotoHtml = `
-                    <div class="ms-3 flex-shrink-0">
-                        <a href="${item.foto}" target="_blank" title="Klik untuk melihat foto penuh">
-                            <img src="${thumbUrl}" alt="Foto Absen" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 60px; width: 60px; object-fit: cover; background-color: #e9ecef;" onerror="this.src='https://via.placeholder.com/60?text=Foto';">
-                        </a>
+                    <div class="ms-3 flex-shrink-0" style="cursor: pointer;" onclick="bukaFotoPenuh('${fullUrl}')">
+                        <img src="${thumbUrl}" alt="Foto Absen" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 60px; width: 60px; object-fit: cover; background-color: #e9ecef;" onerror="this.src='https://via.placeholder.com/60?text=Foto';">
                     </div>`;
                 }
 
@@ -942,6 +957,28 @@ function switchView(viewId, isSistemBack = false) {
             document.getElementById('profil-golongan').innerText = currentUser.golongan || "-";
             document.getElementById('profil-jabatan').innerText = currentUser.jabatan || "-";
             switchView('view-profil');
+        }
+        
+        function bukaFotoPenuh(url) {
+            document.getElementById('img-foto-full').src = url;
+            const modal = document.getElementById('modal-foto');
+            modal.classList.remove('d-none');
+            modal.classList.add('d-flex');
+            
+            // Tambahkan jejak URL agar saat tombol back HP ditekan, foto ini yang tertutup
+            history.pushState({ halaman: 'view-riwayat', modal: true }, "", "#lihat-foto");
+        }
+
+        function tutupFotoPenuh(dariTombolBack = false) {
+            const modal = document.getElementById('modal-foto');
+            modal.classList.remove('d-flex');
+            modal.classList.add('d-none');
+            document.getElementById('img-foto-full').src = ""; // Bersihkan gambar
+            
+            // Jika ditutup pakai tombol "X", kita mundurkan riwayat HP secara manual
+            if (!dariTombolBack) {
+                history.back();
+            }
         }
     </script>
 </body>
