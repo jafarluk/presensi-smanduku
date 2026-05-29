@@ -468,12 +468,7 @@
         }
 
 function switchView(viewId, isSistemBack = false) {
-            // Mencegah penumpukan riwayat jika tombol "Batal" atau "Panah" di aplikasi ditekan
-            if (viewId === 'view-dashboard' && !isSistemBack && history.state && history.state.halaman !== 'view-dashboard') {
-                history.back(); // Panggil fungsi mundur bawaan HP
-                return; // Hentikan eksekusi, biarkan listener popstate di bawah yang bekerja
-            }
-
+            // Sembunyikan semua halaman
             document.getElementById('view-login').classList.add('d-none');
             document.getElementById('view-dashboard').classList.add('d-none');
             document.getElementById('view-kamera').classList.add('d-none');
@@ -482,52 +477,63 @@ function switchView(viewId, isSistemBack = false) {
             document.getElementById('view-riwayat').classList.add('d-none'); 
             document.getElementById('view-profil').classList.add('d-none'); 
 
+            // Tampilkan halaman yang dituju
             document.getElementById(viewId).classList.remove('d-none');
 
             if(viewId === 'view-dashboard') {
                 setTimeout(initPetaDanGPS, 300); 
             }
 
-            // Simpan jejak ke riwayat browser HP (jika bukan dipicu oleh tombol back HP)
+            // Manajemen Riwayat HP (History API)
             if (!isSistemBack) {
-                history.pushState({ halaman: viewId }, "", "#" + viewId);
+                if (viewId === 'view-dashboard') {
+                    // Paksa memori HP untuk mereset riwayat ke dashboard agar tidak menumpuk
+                    history.replaceState({ halaman: viewId }, "", "#" + viewId);
+                } else {
+                    history.pushState({ halaman: viewId }, "", "#" + viewId);
+                }
             }
         }
 
         // Listener untuk mendeteksi saat pengguna menekan tombol Back fisik di HP
         window.addEventListener('popstate', function(event) {
-            // Matikan kamera secara otomatis jika tombol back ditekan saat akan berfoto
+            // 1. Matikan kamera secara otomatis jika tombol back ditekan
             if (streamVideo) {
                 streamVideo.getTracks().forEach(track => track.stop());
                 streamVideo = null;
             }
 
-            // CEK APAKAH FOTO FULL SEDANG TERBUKA
+            // 2. Tutup pop-up foto jika sedang terbuka
             const modalFoto = document.getElementById('modal-foto');
             if (modalFoto && modalFoto.classList.contains('d-flex')) {
-                tutupFotoPenuh(true); // Tutup fotonya saja
-                return; // Berhenti di sini, jangan pindah halaman
+                tutupFotoPenuh(true); 
+                return; // Jangan pindah halaman, cukup tutup fotonya
             }
+
+            // 3. Tentukan halaman tujuan dari jejak memori HP
+            let halamanTujuan = 'view-dashboard';
             
-            // Jika ada riwayat sebelumnya, perintahkan aplikasi mundur ke halaman tersebut
             if (event.state && event.state.halaman) {
-                switchView(event.state.halaman, true);
+                halamanTujuan = event.state.halaman;
             } else if (window.location.hash) {
-                // KODE BARU: Jika browser "lupa" karena habis buka link luar, baca dari URL-nya
                 let jejakHash = window.location.hash.substring(1);
                 if (document.getElementById(jejakHash)) {
-                    switchView(jejakHash, true);
-                } else {
-                    switchView('view-dashboard', true);
+                    halamanTujuan = jejakHash;
                 }
-            } else {
-                // Jika history kosong (sudah di paling awal), arahkan ke dashboard atau login
-                if (currentUser.nip !== "") {
-                    switchView('view-dashboard', true);
-                } else {
-                    switchView('view-login', true);
-                }
+            } else if (currentUser.nip === "") {
+                halamanTujuan = 'view-login';
             }
+
+            // 4. SOLUSI BUG KAMERA HITAM
+            // Jika memori HP membawa pengguna terdampar di halaman kamera/preview 
+            // via tombol back fisik, langsung tarik mereka dengan aman ke Dashboard
+            if ((halamanTujuan === 'view-kamera' || halamanTujuan === 'view-preview') && !streamVideo) {
+                halamanTujuan = 'view-dashboard';
+                history.replaceState({ halaman: 'view-dashboard' }, "", "#view-dashboard");
+            }
+
+            // 5. Jalankan perpindahan halaman
+            switchView(halamanTujuan, true);
         });
 
         function initPetaDanGPS() {
