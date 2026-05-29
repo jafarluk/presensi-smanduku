@@ -809,16 +809,18 @@
                 let fotoHtml = "";
                 if (item.foto && item.foto.startsWith("http")) {
                     let thumbUrl = item.foto;
-                    // Ubah link view bawaan gdrive menjadi link thumbnail langsung
+                    
+                    // Mengambil ID Foto dari link Google Drive
                     const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
                     if (match && match[1]) {
-                        thumbUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                        // MENGGUNAKAN JALUR "THUMBNAIL" AGAR GOOGLE DRIVE TIDAK MEMBLOKIR GAMBAR
+                        thumbUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200-h200`;
                     }
                     
                     fotoHtml = `
                     <div class="ms-3 flex-shrink-0">
                         <a href="${item.foto}" target="_blank" title="Klik untuk melihat foto penuh">
-                            <img src="${thumbUrl}" alt="Foto Absen" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 60px; width: 60px; object-fit: cover; background-color: #e9ecef;">
+                            <img src="${thumbUrl}" alt="Foto Absen" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 60px; width: 60px; object-fit: cover; background-color: #e9ecef;" onerror="this.src='https://via.placeholder.com/60?text=Foto';">
                         </a>
                     </div>`;
                 }
