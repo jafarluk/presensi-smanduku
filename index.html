@@ -286,6 +286,45 @@
         
         let antreanOffline = JSON.parse(localStorage.getItem('antreanOfflineData')) || [];
 
+        // --- TAMBAHAN: FUNGSI PENGINGAT (REMINDER) ---
+        function getTodayStr() {
+            const d = new Date();
+            return d.getDate() + "-" + (d.getMonth() + 1) + "-" + d.getFullYear();
+        }
+
+        function mintaIzinNotifikasi() {
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function tampilkanNotifikasiHP(judul, pesan) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(judul, { body: pesan, icon: "icon.png" });
+                } catch (e) {
+                    console.log("Notifikasi background dibatasi browser.");
+                }
+            }
+            showCustomAlert(pesan, "warning");
+        }
+
+        function checkReminder() {
+            const now = new Date();
+            if (now.getHours() >= 12) {
+                const todayStr = getTodayStr();
+                const tglMasuk = localStorage.getItem('tglAbsenMasuk');
+                const statusAbsen = localStorage.getItem('statusAbsenHariIni');
+                const lastReminder = localStorage.getItem('lastReminderDate');
+
+                if (tglMasuk === todayStr && statusAbsen === 'Masuk_Sudah_Pulang_Belum' && lastReminder !== todayStr) {
+                    tampilkanNotifikasiHP("⏰ Waktu Absen Pulang", "Tabe Guru, sudah lewat jam 12 siang. Jangan lupa untuk mengisi Absen Pulang hari ini ya!");
+                    localStorage.setItem('lastReminderDate', todayStr);
+                }
+            }
+        }
+        // ---------------------------------------------
+
         window.onload = function() {
             updateOfflineStatusDisplay(); 
             
@@ -300,6 +339,8 @@
                 document.getElementById('nip-guru').innerText = "NIP: " + currentUser.nip;
                 switchView('view-dashboard');
                 updateOfflineBadge(); 
+
+                mintaIzinNotifikasi(); // Meminta izin notif dari HP guru saat masuk
 
                 // --- CEK PASSWORD LATAR BELAKANG ---
                 if (navigator.onLine && currentUser.password) {
@@ -367,6 +408,7 @@
 
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
+            checkReminder(); // Cek pengingat setiap detik
         }, 1000);
 
         function showCustomAlert(pesan, tipe = 'info') {
@@ -570,6 +612,16 @@
                 foto: currentFotoBase64,
                 waktuOffline: new Date().getTime() 
             };
+
+            // --- CATAT STATUS ABSEN LOKAL UNTUK PENGINGAT ---
+            const todayStr = getTodayStr();
+            if (jenisAbsenAktif === "Masuk") {
+                localStorage.setItem('tglAbsenMasuk', todayStr);
+                localStorage.setItem('statusAbsenHariIni', 'Masuk_Sudah_Pulang_Belum');
+            } else if (jenisAbsenAktif === "Pulang") {
+                localStorage.setItem('statusAbsenHariIni', 'Sudah_Pulang');
+            }
+            // ------------------------------------------------
 
             if (!navigator.onLine) {
                 antreanOffline.push(payloadAbsen); 
