@@ -441,7 +441,13 @@
             document.getElementById('loading-overlay').classList.toggle('d-none', !show);
         }
 
-        function switchView(viewId) {
+function switchView(viewId, isSistemBack = false) {
+            // Mencegah penumpukan riwayat jika tombol "Batal" atau "Panah" di aplikasi ditekan
+            if (viewId === 'view-dashboard' && !isSistemBack && history.state && history.state.halaman !== 'view-dashboard') {
+                history.back(); // Panggil fungsi mundur bawaan HP
+                return; // Hentikan eksekusi, biarkan listener popstate di bawah yang bekerja
+            }
+
             document.getElementById('view-login').classList.add('d-none');
             document.getElementById('view-dashboard').classList.add('d-none');
             document.getElementById('view-kamera').classList.add('d-none');
@@ -449,12 +455,39 @@
             document.getElementById('view-izin').classList.add('d-none'); 
             document.getElementById('view-riwayat').classList.add('d-none'); 
             document.getElementById('view-profil').classList.add('d-none'); 
+
             document.getElementById(viewId).classList.remove('d-none');
 
             if(viewId === 'view-dashboard') {
                 setTimeout(initPetaDanGPS, 300); 
             }
+
+            // Simpan jejak ke riwayat browser HP (jika bukan dipicu oleh tombol back HP)
+            if (!isSistemBack) {
+                history.pushState({ halaman: viewId }, "", "#" + viewId);
+            }
         }
+
+        // Listener untuk mendeteksi saat pengguna menekan tombol Back fisik di HP
+        window.addEventListener('popstate', function(event) {
+            // Matikan kamera secara otomatis jika tombol back ditekan saat akan berfoto
+            if (streamVideo) {
+                streamVideo.getTracks().forEach(track => track.stop());
+                streamVideo = null;
+            }
+
+            // Jika ada riwayat sebelumnya, perintahkan aplikasi mundur ke halaman tersebut
+            if (event.state && event.state.halaman) {
+                switchView(event.state.halaman, true);
+            } else {
+                // Jika history kosong (sudah di paling awal), arahkan ke dashboard atau login
+                if (currentUser.nip !== "") {
+                    switchView('view-dashboard', true);
+                } else {
+                    switchView('view-login', true);
+                }
+            }
+        });
 
         function initPetaDanGPS() {
             if(!myMap) {
