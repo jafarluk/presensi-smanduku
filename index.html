@@ -552,11 +552,13 @@ function switchView(viewId, isSistemBack = false) {
 
                 if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
 
-                gpsWatcher = navigator.geolocation.watchPosition(
+            gpsWatcher = navigator.geolocation.watchPosition(
                     function(position) {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
-                        kordinatLokasi = lat + ", " + lng;
+                        
+                        // Membatasi hanya 6 digit di belakang koma agar rapi
+                        kordinatLokasi = lat.toFixed(6) + ", " + lng.toFixed(6);
 
                         document.getElementById('dashboard-info-lokasi').innerHTML = "📍 Lokasi akurat ditemukan!";
                         document.getElementById('dashboard-info-lokasi').className = "small mt-2 mb-0 text-center fw-bold text-success";
