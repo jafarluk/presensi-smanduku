@@ -1211,7 +1211,7 @@ function switchView(viewId, isSistemBack = false) {
                         let lngClean = parseFloat(parts[1]).toFixed(6);
                         textLokasi = latClean + ", " + lngClean;
 
-                        // Perbaikan format string URL Google Maps Satelit agar akurat
+                        // Gunakan URL Universal Google Maps (Aman untuk Browser/WebView HP)
                         let linkMaps = `https://www.google.com/maps?q=${latClean},${lngClean}&t=k`;
                         
                         lokasiHtml = `
