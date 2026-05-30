@@ -309,13 +309,13 @@
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-belum">-</h4>
                 </div>
             </div>
-            <div class="col-6">
+            <div class="col-6" id="wadah-terlambat">
                 <div id="card-filter-terlambat" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-danger text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('terlambat')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">TERLAMBAT</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-terlambat">-</h4>
                 </div>
             </div>
-            <div class="col-6">
+            <div class="col-6" id="wadah-izin">
                 <div id="card-filter-izin" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('izin')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">IZIN/SAKIT</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-izin">-</h4>
@@ -1102,9 +1102,20 @@ function switchView(viewId, isSistemBack = false) {
             filterDataKepsek('semua');
         }
 
-        // FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA MASUK/PULANG
+// FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA MASUK/PULANG
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
+            
+            // --- LOGIKA BARU: SEMBUNYIKAN TERLAMBAT SAAT ABSEN PULANG ---
+            if (modeSesiAktif === 'pulang') {
+                document.getElementById('wadah-terlambat').classList.add('d-none');
+                document.getElementById('wadah-izin').className = "col-12"; // Bikin kotak izin memanjang penuh
+                if (mode === 'terlambat') mode = 'semua'; // Cegah error jika statusnya terlambat
+            } else {
+                document.getElementById('wadah-terlambat').classList.remove('d-none');
+                document.getElementById('wadah-izin').className = "col-6"; // Kembalikan ukuran semula
+            }
+            // -------------------------------------------------------------
             
             // Tampilan Tombol
             document.getElementById('card-filter-hadir').style.opacity = (mode === 'semua' || mode === 'hadir') ? '1' : '0.4';
