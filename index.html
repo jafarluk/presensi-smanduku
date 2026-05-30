@@ -287,25 +287,38 @@
     <div id="view-kepsek" class="d-none min-vh-100 bg-light p-3 pb-5">
         <div class="d-flex align-items-center mb-4 mt-3">
             <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
-            <h5 class="mb-0 fw-bold">Pantauan Kehadiran Hari Ini</h5>
+            <div class="flex-grow-1">
+                <h5 class="mb-0 fw-bold">Pantauan Harian</h5>
+                <select id="pilih-sesi-pantau" class="form-select form-select-sm mt-2 fw-bold text-primary border-primary" style="max-width: 200px; background-color: #e8f0fe;" onchange="gantiSesiPantau()">
+                    <option value="masuk">Absen Pagi (MASUK)</option>
+                    <option value="pulang">Absen Siang (PULANG)</option>
+                </select>
+            </div>
         </div>
+
         <div class="row g-2 mb-3">
-            <div class="col-4">
+            <div class="col-6">
                 <div id="card-filter-hadir" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-success text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('hadir')">
-                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">HADIR</small>
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">SUDAH ABSEN</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-hadir">-</h4>
                 </div>
             </div>
-            <div class="col-4">
-                <div id="card-filter-izin" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('izin')">
-                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">IZIN/SAKIT</small>
-                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-izin">-</h4>
+            <div class="col-6">
+                <div id="card-filter-belum" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-secondary text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('belum')">
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">BELUM ABSEN</small>
+                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-belum">-</h4>
                 </div>
             </div>
-            <div class="col-4">
+            <div class="col-6">
                 <div id="card-filter-terlambat" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-danger text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('terlambat')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">TERLAMBAT</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-terlambat">-</h4>
+                </div>
+            </div>
+            <div class="col-6">
+                <div id="card-filter-izin" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('izin')">
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">IZIN/SAKIT</small>
+                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-izin">-</h4>
                 </div>
             </div>
         </div>
@@ -318,7 +331,7 @@
         <div id="tempat-data-kepsek">
             <div class="text-center mt-5">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">Menarik data presensi dari server...</p>
+                <p class="mt-2 text-muted">Menarik data dari server...</p>
             </div>
         </div>
     </div>
@@ -341,6 +354,7 @@
         
         let antreanOffline = JSON.parse(localStorage.getItem('antreanOfflineData')) || [];
         let dataKepsekHariIni = [];
+        let modeSesiAktif = 'masuk'; // TAMBAHKAN INI UNTUK SAKELAR MASUK/PULANG
         
         // --- TAMBAHAN: FUNGSI PENGINGAT (REMINDER) ---
         function getTodayStr() {
@@ -1070,15 +1084,9 @@ function switchView(viewId, isSistemBack = false) {
             .then(response => response.json())
             .then(res => {
                 if(res.status === 'success') {
-                    // Update Panel Statistik
-                    document.getElementById('kepsek-hadir').innerText = res.data.hadir;
-                    document.getElementById('kepsek-izin').innerText = res.data.izin;
-                    document.getElementById('kepsek-terlambat').innerText = res.data.terlambat;
-
-                    // Simpan data ke memori HP lalu tampilkan semua
-                    dataKepsekHariIni = res.data.rincian;
-                    filterDataKepsek('semua');
-                    
+                    dataKepsekHariIni = res.data;
+                    document.getElementById('pilih-sesi-pantau').value = 'masuk'; // Reset ke pagi
+                    gantiSesiPantau(); // Proses render
                 } else {
                     document.getElementById('tempat-data-kepsek').innerHTML = '<p class="text-center text-danger mt-5">Gagal memuat data presensi.</p>';
                 }
@@ -1088,51 +1096,94 @@ function switchView(viewId, isSistemBack = false) {
             });
         }
 
-// FUNGSI UNTUK MENYORTIR DATA (DENGAN TAMPILAN ALASAN IZIN POLOS TANPA BACKGROUND)
+        // FUNGSI BARU UNTUK SAKELAR PAGI / SIANG
+        function gantiSesiPantau() {
+            modeSesiAktif = document.getElementById('pilih-sesi-pantau').value;
+            filterDataKepsek('semua');
+        }
+
+        // FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA MASUK/PULANG
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
             
-            // Efek visual: buramkan kotak yang tidak dipilih
+            // Tampilan Tombol
             document.getElementById('card-filter-hadir').style.opacity = (mode === 'semua' || mode === 'hadir') ? '1' : '0.4';
-            document.getElementById('card-filter-izin').style.opacity = (mode === 'semua' || mode === 'izin') ? '1' : '0.4';
+            document.getElementById('card-filter-belum').style.opacity = (mode === 'semua' || mode === 'belum') ? '1' : '0.4';
             document.getElementById('card-filter-terlambat').style.opacity = (mode === 'semua' || mode === 'terlambat') ? '1' : '0.4';
+            document.getElementById('card-filter-izin').style.opacity = (mode === 'semua' || mode === 'izin') ? '1' : '0.4';
             
-            // Tampilkan/sembunyikan tombol "Lihat Semua"
             if (mode === 'semua') document.getElementById('btn-filter-semua').classList.add('d-none');
             else document.getElementById('btn-filter-semua').classList.remove('d-none');
 
-            // Proses penyaringan
-            let dataTampil = dataKepsekHariIni;
-            if (mode === 'hadir') {
-                dataTampil = dataKepsekHariIni.filter(item => item.jenis === "Masuk");
-            } else if (mode === 'izin') {
-                dataTampil = dataKepsekHariIni.filter(item => item.jenis === "Izin");
-            } else if (mode === 'terlambat') {
-                dataTampil = dataKepsekHariIni.filter(item => item.status.toLowerCase().includes("terlambat"));
-            }
+            // Hitung Ulang Angka secara Otomatis
+            let jmlHadir = 0, jmlBelum = 0, jmlTelat = 0, jmlIzin = 0;
+            let dataTampil = [];
 
-            // Tampilkan pesan jika kosong
+            dataKepsekHariIni.forEach(item => {
+                // Tentukan kita sedang melihat status apa (Masuk atau Pulang)
+                let statusAktif = (modeSesiAktif === 'masuk') ? item.status_masuk : item.status_pulang;
+                let sLow = statusAktif.toLowerCase();
+                
+                let isHadir = sLow.includes("tepat") || sLow.includes("terlambat") || sLow.includes("sudah pulang");
+                let isBelum = sLow.includes("belum");
+                let isTelat = sLow.includes("terlambat");
+                let isIzin = !isHadir && !isBelum; // Sisanya adalah sakit/izin/dinas
+
+                // Penambahan jumlah kotak
+                if(isHadir) jmlHadir++;
+                if(isBelum) jmlBelum++;
+                if(isTelat) jmlTelat++;
+                if(isIzin) jmlIzin++;
+
+                // Logika Filter Penampil
+                let masukFilter = false;
+                if(mode === 'semua') masukFilter = true;
+                else if(mode === 'hadir' && isHadir) masukFilter = true;
+                else if(mode === 'belum' && isBelum) masukFilter = true;
+                else if(mode === 'terlambat' && isTelat) masukFilter = true;
+                else if(mode === 'izin' && isIzin) masukFilter = true;
+
+                if(masukFilter) {
+                    // Berikan objek bayangan agar mudah di-render di bawah tanpa if/else panjang
+                    dataTampil.push({
+                        nama: item.nama,
+                        status: statusAktif,
+                        waktu: (modeSesiAktif === 'masuk') ? item.waktu_masuk : item.waktu_pulang,
+                        foto: (modeSesiAktif === 'masuk') ? item.foto_masuk : item.foto_pulang,
+                        alasan: item.alasan_izin,
+                        isBelum: isBelum,
+                        isIzin: isIzin
+                    });
+                }
+            });
+
+            // Update Angka di HTML
+            document.getElementById('kepsek-hadir').innerText = jmlHadir;
+            document.getElementById('kepsek-belum').innerText = jmlBelum;
+            document.getElementById('kepsek-terlambat').innerText = jmlTelat;
+            document.getElementById('kepsek-izin').innerText = jmlIzin;
+
+            // Render Kartu Guru
             if(dataTampil.length === 0) {
                 container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">search_off</span><p class="mt-2 text-muted small">Tidak ada data untuk kategori ini.</p></div>`;
                 return;
             }
 
-            // Gambar ulang daftar kartu guru
             let htmlStr = "";
             dataTampil.forEach(item => {
                 let badgeClass = "bg-secondary";
-                if (item.status.toLowerCase().includes("tepat")) badgeClass = "bg-success";
+                if (item.status.toLowerCase().includes("tepat") || item.status.toLowerCase().includes("sudah")) badgeClass = "bg-success";
                 else if (item.status.toLowerCase().includes("terlambat")) badgeClass = "bg-danger";
-                else badgeClass = "bg-warning text-dark"; 
+                else if (item.isIzin) badgeClass = "bg-warning text-dark"; 
 
-                // --- TAMPILAN ALASAN POLOS TANPA BACKGROUND ---
                 let alasanHtml = "";
-                if (item.jenis === "Izin" && item.alasan) {
+                if (item.isIzin && item.alasan) {
                     alasanHtml = `<div class="text-secondary mt-1 small d-block" style="font-size: 11px; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
                 }
 
-                let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person</span></div>`;
-                if (item.foto && item.foto.startsWith("http")) {
+                // Bagian Foto (Jika Belum Absen, berikan ikon X saja dan jangan bisa diklik)
+                let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person_off</span></div>`;
+                if (!item.isBelum && item.foto && item.foto.startsWith("http")) {
                     let thumbUrl = item.foto;
                     let fullUrl = item.foto;
                     const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -1147,10 +1198,10 @@ function switchView(viewId, isSistemBack = false) {
                 }
 
                 htmlStr += `
-                <div class="card border-0 shadow-sm mb-2" style="border-radius: 12px;">
+                <div class="card border-0 shadow-sm mb-2" style="border-radius: 12px; ${item.isBelum ? 'opacity: 0.6;' : ''}">
                     <div class="card-body p-2 d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1 overflow-hidden">
-                            <h6 class="mb-0 fw-bold small text-truncate">${item.nama}</h6>
+                            <h6 class="mb-0 fw-bold small text-truncate ${item.isBelum ? 'text-muted' : ''}">${item.nama}</h6>
                             <div class="d-flex align-items-center mt-1">
                                 <span class="badge ${badgeClass} rounded-pill" style="font-size: 9px;">${item.status}</span>
                                 <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
