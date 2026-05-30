@@ -1102,20 +1102,19 @@ function switchView(viewId, isSistemBack = false) {
             filterDataKepsek('semua');
         }
 
-// FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA MASUK/PULANG
+        // FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA LOKASI SATELIT
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
             
-            // --- LOGIKA BARU: SEMBUNYIKAN TERLAMBAT SAAT ABSEN PULANG ---
+            // --- LOGIKA SEMBUNYIKAN TERLAMBAT SAAT ABSEN PULANG ---
             if (modeSesiAktif === 'pulang') {
                 document.getElementById('wadah-terlambat').classList.add('d-none');
-                document.getElementById('wadah-izin').className = "col-12"; // Bikin kotak izin memanjang penuh
-                if (mode === 'terlambat') mode = 'semua'; // Cegah error jika statusnya terlambat
+                document.getElementById('wadah-izin').className = "col-12"; 
+                if (mode === 'terlambat') mode = 'semua'; 
             } else {
                 document.getElementById('wadah-terlambat').classList.remove('d-none');
-                document.getElementById('wadah-izin').className = "col-6"; // Kembalikan ukuran semula
+                document.getElementById('wadah-izin').className = "col-6"; 
             }
-            // -------------------------------------------------------------
             
             // Tampilan Tombol
             document.getElementById('card-filter-hadir').style.opacity = (mode === 'semua' || mode === 'hadir') ? '1' : '0.4';
@@ -1131,22 +1130,19 @@ function switchView(viewId, isSistemBack = false) {
             let dataTampil = [];
 
             dataKepsekHariIni.forEach(item => {
-                // Tentukan kita sedang melihat status apa (Masuk atau Pulang)
                 let statusAktif = (modeSesiAktif === 'masuk') ? item.status_masuk : item.status_pulang;
                 let sLow = statusAktif.toLowerCase();
                 
                 let isHadir = sLow.includes("tepat") || sLow.includes("terlambat") || sLow.includes("sudah pulang");
                 let isBelum = sLow.includes("belum");
                 let isTelat = sLow.includes("terlambat");
-                let isIzin = !isHadir && !isBelum; // Sisanya adalah sakit/izin/dinas
+                let isIzin = !isHadir && !isBelum; 
 
-                // Penambahan jumlah kotak
                 if(isHadir) jmlHadir++;
                 if(isBelum) jmlBelum++;
                 if(isTelat) jmlTelat++;
                 if(isIzin) jmlIzin++;
 
-                // Logika Filter Penampil
                 let masukFilter = false;
                 if(mode === 'semua') masukFilter = true;
                 else if(mode === 'hadir' && isHadir) masukFilter = true;
@@ -1155,12 +1151,12 @@ function switchView(viewId, isSistemBack = false) {
                 else if(mode === 'izin' && isIzin) masukFilter = true;
 
                 if(masukFilter) {
-                    // Berikan objek bayangan agar mudah di-render di bawah tanpa if/else panjang
                     dataTampil.push({
                         nama: item.nama,
                         status: statusAktif,
                         waktu: (modeSesiAktif === 'masuk') ? item.waktu_masuk : item.waktu_pulang,
                         foto: (modeSesiAktif === 'masuk') ? item.foto_masuk : item.foto_pulang,
+                        lokasi: (modeSesiAktif === 'masuk') ? item.lokasi_masuk : item.lokasi_pulang, // Menangkap Lokasi
                         alasan: item.alasan_izin,
                         isBelum: isBelum,
                         isIzin: isIzin
@@ -1168,13 +1164,11 @@ function switchView(viewId, isSistemBack = false) {
                 }
             });
 
-            // Update Angka di HTML
             document.getElementById('kepsek-hadir').innerText = jmlHadir;
             document.getElementById('kepsek-belum').innerText = jmlBelum;
             document.getElementById('kepsek-terlambat').innerText = jmlTelat;
             document.getElementById('kepsek-izin').innerText = jmlIzin;
 
-            // Render Kartu Guru
             if(dataTampil.length === 0) {
                 container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">search_off</span><p class="mt-2 text-muted small">Tidak ada data untuk kategori ini.</p></div>`;
                 return;
@@ -1192,7 +1186,26 @@ function switchView(viewId, isSistemBack = false) {
                     alasanHtml = `<div class="text-secondary mt-1 small d-block" style="font-size: 11px; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
                 }
 
-                // Bagian Foto (Jika Belum Absen, berikan ikon X saja dan jangan bisa diklik)
+                // --- LOGIKA BARU: TAMPILAN LOKASI (KLIK MENGARAH KE MAPS SATELIT) ---
+                let lokasiHtml = "";
+                if (!item.isBelum && !item.isIzin && item.lokasi && item.lokasi !== "-") {
+                    let textLokasi = item.lokasi;
+                    if (textLokasi.includes(",")) {
+                        // Jika berisi koordinat, ubah jadi tombol link (t=k untuk mode satelit)
+                        let linkMaps = `https://maps.google.com/maps?q=${textLokasi.replace(" ", "")}&t=k`;
+                        lokasiHtml = `
+                        <a href="${linkMaps}" target="_blank" class="text-primary mt-2 small d-inline-flex align-items-center text-decoration-none" style="font-size: 11px; background: #e8f0fe; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <span class="material-icons me-1" style="font-size: 14px;">satellite_alt</span> ${textLokasi}
+                        </a>`;
+                    } else {
+                        // Jika berisi teks error (contoh: "Akses GPS Ditolak")
+                        lokasiHtml = `
+                        <span class="text-danger mt-2 small d-inline-flex align-items-center" style="font-size: 11px; background: #fce8e6; padding: 4px 8px; border-radius: 6px;">
+                            <span class="material-icons me-1" style="font-size: 14px;">location_off</span> ${textLokasi}
+                        </span>`;
+                    }
+                }
+
                 let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person_off</span></div>`;
                 if (!item.isBelum && item.foto && item.foto.startsWith("http")) {
                     let thumbUrl = item.foto;
@@ -1217,8 +1230,8 @@ function switchView(viewId, isSistemBack = false) {
                                 <span class="badge ${badgeClass} rounded-pill" style="font-size: 9px;">${item.status}</span>
                                 <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
                             </div>
-                            ${alasanHtml} 
-                        </div>
+                            ${alasanHtml}
+                            ${lokasiHtml} </div>
                         ${fotoHtml}
                     </div>
                 </div>`;
