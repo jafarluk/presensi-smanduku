@@ -1102,7 +1102,7 @@ function switchView(viewId, isSistemBack = false) {
             filterDataKepsek('semua');
         }
 
-        // FUNGSI SORTIR YANG DIPERBARUI (FORCE 6 DIGIT & FIX LINK MAPS)
+        // FUNGSI SORTIR DENGAN URUTAN JAM ABSEN TERBARU DI ATAS
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
             
@@ -1164,6 +1164,22 @@ function switchView(viewId, isSistemBack = false) {
                 }
             });
 
+            // =======================================================
+            // KODE BARU: PROSES SORTIR KRONOLOGIS (JAM TERBARU DI ATAS)
+            // =======================================================
+            dataTampil.sort(function(a, b) {
+                // 1. Jika salah satu belum absen, lempar ke bawah
+                if (a.isBelum && !b.isBelum) return 1;
+                if (!a.isBelum && b.isBelum) return -1;
+                
+                // 2. Jika sesama belum absen, urutkan berdasarkan alfabet nama
+                if (a.isBelum && b.isBelum) return a.nama.localeCompare(b.nama);
+                
+                // 3. Jika sudah absen, urutkan berdasarkan jam paling baru (Turun/Descending)
+                return b.waktu.localeCompare(a.waktu);
+            });
+            // =======================================================
+
             document.getElementById('kepsek-hadir').innerText = jmlHadir;
             document.getElementById('kepsek-belum').innerText = jmlBelum;
             document.getElementById('kepsek-terlambat').innerText = jmlTelat;
@@ -1186,18 +1202,16 @@ function switchView(viewId, isSistemBack = false) {
                     alasanHtml = `<div class="text-secondary mt-1 small d-block" style="font-size: 11px; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
                 }
 
-                // --- PERBAIKAN UTAMA LOKASI: FORCE POLOS 6 DIGIT & PERBAIKAN LINK MAPS ---
                 let lokasiHtml = "";
                 if (!item.isBelum && !item.isIzin && item.lokasi && item.lokasi !== "-") {
                     let textLokasi = item.lokasi;
                     if (textLokasi.includes(",")) {
-                        // Pecah koordinat dan paksa potong menjadi 6 digit di sini agar data lama ikut rapi!
                         let parts = textLokasi.split(",");
                         let latClean = parseFloat(parts[0]).toFixed(6);
                         let lngClean = parseFloat(parts[1]).toFixed(6);
                         textLokasi = latClean + ", " + lngClean;
 
-                        // Perbaikan penulisan variabel template literal link Google Maps Satelit
+                        // Perbaikan format string URL Google Maps Satelit agar akurat
                         let linkMaps = `https://maps.google.com/?q=${textLokasi.replace(" ", "")}&t=k`;
                         
                         lokasiHtml = `
