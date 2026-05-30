@@ -1061,7 +1061,7 @@ function switchView(viewId, isSistemBack = false) {
             
             // Nanti di sini kita buat fetch() memanggil Code.gs untuk mengambil datanya
             tarikDataKepsek(); 
-
+            }
         function tarikDataKepsek() {
             fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -1155,7 +1155,6 @@ function switchView(viewId, isSistemBack = false) {
                 </div>`;
             });
             container.innerHTML = htmlStr;
-        }
         }
     </script>
 </body>
