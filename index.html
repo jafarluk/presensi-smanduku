@@ -291,25 +291,30 @@
         </div>
         <div class="row g-2 mb-3">
             <div class="col-4">
-                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-success text-white">
+                <div id="card-filter-hadir" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-success text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('hadir')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">HADIR</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-hadir">-</h4>
                 </div>
             </div>
             <div class="col-4">
-                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark">
+                <div id="card-filter-izin" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('izin')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">IZIN/SAKIT</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-izin">-</h4>
                 </div>
             </div>
             <div class="col-4">
-                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-danger text-white">
+                <div id="card-filter-terlambat" class="card border-0 shadow-sm rounded-3 text-center p-2 bg-danger text-white" style="cursor: pointer; transition: 0.2s;" onclick="filterDataKepsek('terlambat')">
                     <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">TERLAMBAT</small>
                     <h4 class="fw-bold mb-0 mt-1" id="kepsek-terlambat">-</h4>
                 </div>
             </div>
         </div>
-        <h6 class="fw-bold small text-muted mb-2 mt-4"><span class="material-icons align-middle" style="font-size: 16px;">format_list_bulleted</span> Rincian Kehadiran Guru:</h6>
+        
+        <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
+            <h6 class="fw-bold small text-muted mb-0"><span class="material-icons align-middle" style="font-size: 16px;">format_list_bulleted</span> Rincian Kehadiran:</h6>
+            <span id="btn-filter-semua" class="badge bg-primary d-none" style="cursor: pointer;" onclick="filterDataKepsek('semua')">Lihat Semua</span>
+        </div>
+
         <div id="tempat-data-kepsek">
             <div class="text-center mt-5">
                 <div class="spinner-border text-primary" role="status"></div>
@@ -335,7 +340,8 @@
         let gpsWatcher = null; 
         
         let antreanOffline = JSON.parse(localStorage.getItem('antreanOfflineData')) || [];
-
+        let dataKepsekHariIni = [];
+        
         // --- TAMBAHAN: FUNGSI PENGINGAT (REMINDER) ---
         function getTodayStr() {
             const d = new Date();
@@ -1056,7 +1062,7 @@ function switchView(viewId, isSistemBack = false) {
             // Nanti di sini kita buat fetch() memanggil Code.gs untuk mengambil datanya
             tarikDataKepsek(); 
 
-            function tarikDataKepsek() {
+        function tarikDataKepsek() {
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'pantau_kepsek' })
@@ -1069,52 +1075,10 @@ function switchView(viewId, isSistemBack = false) {
                     document.getElementById('kepsek-izin').innerText = res.data.izin;
                     document.getElementById('kepsek-terlambat').innerText = res.data.terlambat;
 
-                    // Buat Daftar Rincian
-                    const container = document.getElementById('tempat-data-kepsek');
-                    if(res.data.rincian.length === 0) {
-                        container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">inbox</span><p class="mt-2 text-muted small">Belum ada guru yang mengisi kehadiran hari ini.</p></div>`;
-                        return;
-                    }
-
-                    let htmlStr = "";
-                    res.data.rincian.forEach(item => {
-                        // Atur warna lencana berdasarkan status (Tepat Waktu/Terlambat/Izin)
-                        let badgeClass = "bg-secondary";
-                        if (item.status.toLowerCase().includes("tepat")) badgeClass = "bg-success";
-                        else if (item.status.toLowerCase().includes("terlambat")) badgeClass = "bg-danger";
-                        else badgeClass = "bg-warning text-dark"; // Untuk sakit/izin/dinas
-
-                        // Format Foto
-                        let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person</span></div>`;
-                        if (item.foto && item.foto.startsWith("http")) {
-                            let thumbUrl = item.foto;
-                            let fullUrl = item.foto;
-                            const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                            if (match && match[1]) {
-                                thumbUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w150-h150`;
-                                fullUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000-h1000`;
-                            }
-                            fotoHtml = `
-                            <div class="ms-2 flex-shrink-0" style="cursor: pointer;" onclick="bukaFotoPenuh('${fullUrl}')">
-                                <img src="${thumbUrl}" alt="Foto" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 45px; width: 45px; object-fit: cover; background-color: #e9ecef;">
-                            </div>`;
-                        }
-
-                        htmlStr += `
-                        <div class="card border-0 shadow-sm mb-2" style="border-radius: 12px;">
-                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                                <div class="flex-grow-1 overflow-hidden">
-                                    <h6 class="mb-0 fw-bold small text-truncate">${item.nama}</h6>
-                                    <div class="d-flex align-items-center mt-1">
-                                        <span class="badge ${badgeClass} rounded-pill" style="font-size: 9px;">${item.status}</span>
-                                        <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
-                                    </div>
-                                </div>
-                                ${fotoHtml}
-                            </div>
-                        </div>`;
-                    });
-                    container.innerHTML = htmlStr;
+                    // Simpan data ke memori HP lalu tampilkan semua
+                    dataKepsekHariIni = res.data.rincian;
+                    filterDataKepsek('semua');
+                    
                 } else {
                     document.getElementById('tempat-data-kepsek').innerHTML = '<p class="text-center text-danger mt-5">Gagal memuat data presensi.</p>';
                 }
@@ -1122,6 +1086,75 @@ function switchView(viewId, isSistemBack = false) {
             .catch(error => {
                 document.getElementById('tempat-data-kepsek').innerHTML = '<p class="text-center text-danger mt-5">Terjadi kesalahan koneksi saat memuat data.</p>';
             });
+        }
+
+        // FUNGSI BARU UNTUK MENYORTIR DATA
+        function filterDataKepsek(mode) {
+            const container = document.getElementById('tempat-data-kepsek');
+            
+            // Efek visual: buramkan kotak yang tidak dipilih
+            document.getElementById('card-filter-hadir').style.opacity = (mode === 'semua' || mode === 'hadir') ? '1' : '0.4';
+            document.getElementById('card-filter-izin').style.opacity = (mode === 'semua' || mode === 'izin') ? '1' : '0.4';
+            document.getElementById('card-filter-terlambat').style.opacity = (mode === 'semua' || mode === 'terlambat') ? '1' : '0.4';
+            
+            // Tampilkan/sembunyikan tombol "Lihat Semua"
+            if (mode === 'semua') document.getElementById('btn-filter-semua').classList.add('d-none');
+            else document.getElementById('btn-filter-semua').classList.remove('d-none');
+
+            // Proses penyaringan
+            let dataTampil = dataKepsekHariIni;
+            if (mode === 'hadir') {
+                dataTampil = dataKepsekHariIni.filter(item => item.jenis === "Masuk");
+            } else if (mode === 'izin') {
+                dataTampil = dataKepsekHariIni.filter(item => item.jenis === "Izin");
+            } else if (mode === 'terlambat') {
+                dataTampil = dataKepsekHariIni.filter(item => item.status.toLowerCase().includes("terlambat"));
+            }
+
+            // Tampilkan pesan jika kosong
+            if(dataTampil.length === 0) {
+                container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">search_off</span><p class="mt-2 text-muted small">Tidak ada data untuk kategori ini.</p></div>`;
+                return;
+            }
+
+            // Gambar ulang daftar kartu guru
+            let htmlStr = "";
+            dataTampil.forEach(item => {
+                let badgeClass = "bg-secondary";
+                if (item.status.toLowerCase().includes("tepat")) badgeClass = "bg-success";
+                else if (item.status.toLowerCase().includes("terlambat")) badgeClass = "bg-danger";
+                else badgeClass = "bg-warning text-dark"; 
+
+                let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person</span></div>`;
+                if (item.foto && item.foto.startsWith("http")) {
+                    let thumbUrl = item.foto;
+                    let fullUrl = item.foto;
+                    const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        thumbUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w150-h150`;
+                        fullUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000-h1000`;
+                    }
+                    fotoHtml = `
+                    <div class="ms-2 flex-shrink-0" style="cursor: pointer;" onclick="bukaFotoPenuh('${fullUrl}')">
+                        <img src="${thumbUrl}" alt="Foto" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 45px; width: 45px; object-fit: cover; background-color: #e9ecef;">
+                    </div>`;
+                }
+
+                htmlStr += `
+                <div class="card border-0 shadow-sm mb-2" style="border-radius: 12px;">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <h6 class="mb-0 fw-bold small text-truncate">${item.nama}</h6>
+                            <div class="d-flex align-items-center mt-1">
+                                <span class="badge ${badgeClass} rounded-pill" style="font-size: 9px;">${item.status}</span>
+                                <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
+                            </div>
+                        </div>
+                        ${fotoHtml}
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = htmlStr;
         }
         }
     </script>
