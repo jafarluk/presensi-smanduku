@@ -146,6 +146,15 @@
                         <h6 class="fw-bold mb-0 small">Izin / Sakit</h6>
                     </div>
                 </div>
+                <div class="col-12 d-none" id="menu-kepsek">
+                    <div class="card menu-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);" onclick="bukaMenuKepsek()">
+                        <div class="icon-box mx-auto text-white" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
+                            <span class="material-icons">admin_panel_settings</span>
+                        </div>
+                        <h6 class="fw-bold mb-1 small text-white">Pantauan Kepala Sekolah</h6>
+                        <small style="font-size: 10px; opacity: 0.8;">Lihat data kehadiran guru hari ini</small>
+                    </div>
+                </div>
             </div>
 
             <!-- Peta Lokasi -->
@@ -274,6 +283,40 @@
         </div>
         <p class="text-center text-muted mt-3 small">Jika ada data yang tidak sesuai, mohon hubungi Mas Kude.</p>
     </div>
+<!-- HALAMAN KEPSEK -->
+    <div id="view-kepsek" class="d-none min-vh-100 bg-light p-3 pb-5">
+        <div class="d-flex align-items-center mb-4 mt-3">
+            <span class="material-icons me-3" style="font-size: 28px; cursor: pointer;" onclick="switchView('view-dashboard')">arrow_back</span>
+            <h5 class="mb-0 fw-bold">Pantauan Kehadiran Hari Ini</h5>
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-success text-white">
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">HADIR</small>
+                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-hadir">-</h4>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-warning text-dark">
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">IZIN/SAKIT</small>
+                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-izin">-</h4>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-3 text-center p-2 bg-danger text-white">
+                    <small style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">TERLAMBAT</small>
+                    <h4 class="fw-bold mb-0 mt-1" id="kepsek-terlambat">-</h4>
+                </div>
+            </div>
+        </div>
+        <h6 class="fw-bold small text-muted mb-2 mt-4"><span class="material-icons align-middle" style="font-size: 16px;">format_list_bulleted</span> Rincian Kehadiran Guru:</h6>
+        <div id="tempat-data-kepsek">
+            <div class="text-center mt-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Menarik data presensi dari server...</p>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -344,6 +387,7 @@
                 currentUser = JSON.parse(savedUser);
                 document.getElementById('nama-guru').innerText = currentUser.nama;
                 document.getElementById('nip-guru').innerText = "NIP: " + currentUser.nip;
+                cekAksesKepsek();
                 
                 // --- PERBAIKAN UTAMA: BACA JEJAK HALAMAN TERAKHIR ---
                 let halamanTujuan = 'view-dashboard'; // Default ke dashboard
@@ -476,6 +520,7 @@ function switchView(viewId, isSistemBack = false) {
             document.getElementById('view-izin').classList.add('d-none'); 
             document.getElementById('view-riwayat').classList.add('d-none'); 
             document.getElementById('view-profil').classList.add('d-none'); 
+            document.getElementById('view-kepsek').classList.add('d-none');
 
             // Tampilkan halaman yang dituju
             document.getElementById(viewId).classList.remove('d-none');
@@ -610,6 +655,8 @@ function switchView(viewId, isSistemBack = false) {
 
                     document.getElementById('nama-guru').innerText = data.nama;
                     document.getElementById('nip-guru').innerText = "NIP: " + data.nip;
+
+                    cekAksesKepsek();
                     
                     switchView('view-dashboard');
                 } else {
@@ -987,6 +1034,27 @@ function switchView(viewId, isSistemBack = false) {
             if (!dariTombolBack) {
                 history.back();
             }
+        }
+        
+        function cekAksesKepsek() {
+            // Cek apakah ada kata "kepala sekolah" di dalam jabatannya (huruf besar/kecil tidak masalah)
+            if (currentUser.jabatan && currentUser.jabatan.toLowerCase().includes('kepala sekolah')) {
+                document.getElementById('menu-kepsek').classList.remove('d-none');
+            } else {
+                document.getElementById('menu-kepsek').classList.add('d-none');
+            }
+        }
+
+        function bukaMenuKepsek() {
+            if (!navigator.onLine) {
+                showCustomAlert("Fitur pantauan hanya bisa diakses saat perangkat Online.", 'error');
+                return;
+            }
+            switchView('view-kepsek');
+            document.getElementById('tempat-data-kepsek').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Menarik data presensi hari ini...</p></div>';
+            
+            // Nanti di sini kita buat fetch() memanggil Code.gs untuk mengambil datanya
+            // tarikDataKepsek(); 
         }
     </script>
 </body>
