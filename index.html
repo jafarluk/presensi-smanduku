@@ -1054,7 +1054,75 @@ function switchView(viewId, isSistemBack = false) {
             document.getElementById('tempat-data-kepsek').innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Menarik data presensi hari ini...</p></div>';
             
             // Nanti di sini kita buat fetch() memanggil Code.gs untuk mengambil datanya
-            // tarikDataKepsek(); 
+            tarikDataKepsek(); 
+
+            function tarikDataKepsek() {
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'pantau_kepsek' })
+            })
+            .then(response => response.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    // Update Panel Statistik
+                    document.getElementById('kepsek-hadir').innerText = res.data.hadir;
+                    document.getElementById('kepsek-izin').innerText = res.data.izin;
+                    document.getElementById('kepsek-terlambat').innerText = res.data.terlambat;
+
+                    // Buat Daftar Rincian
+                    const container = document.getElementById('tempat-data-kepsek');
+                    if(res.data.rincian.length === 0) {
+                        container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">inbox</span><p class="mt-2 text-muted small">Belum ada guru yang mengisi kehadiran hari ini.</p></div>`;
+                        return;
+                    }
+
+                    let htmlStr = "";
+                    res.data.rincian.forEach(item => {
+                        // Atur warna lencana berdasarkan status (Tepat Waktu/Terlambat/Izin)
+                        let badgeClass = "bg-secondary";
+                        if (item.status.toLowerCase().includes("tepat")) badgeClass = "bg-success";
+                        else if (item.status.toLowerCase().includes("terlambat")) badgeClass = "bg-danger";
+                        else badgeClass = "bg-warning text-dark"; // Untuk sakit/izin/dinas
+
+                        // Format Foto
+                        let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person</span></div>`;
+                        if (item.foto && item.foto.startsWith("http")) {
+                            let thumbUrl = item.foto;
+                            let fullUrl = item.foto;
+                            const match = item.foto.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                            if (match && match[1]) {
+                                thumbUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w150-h150`;
+                                fullUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000-h1000`;
+                            }
+                            fotoHtml = `
+                            <div class="ms-2 flex-shrink-0" style="cursor: pointer;" onclick="bukaFotoPenuh('${fullUrl}')">
+                                <img src="${thumbUrl}" alt="Foto" class="rounded-3 shadow-sm border border-secondary border-opacity-25" style="height: 45px; width: 45px; object-fit: cover; background-color: #e9ecef;">
+                            </div>`;
+                        }
+
+                        htmlStr += `
+                        <div class="card border-0 shadow-sm mb-2" style="border-radius: 12px;">
+                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <h6 class="mb-0 fw-bold small text-truncate">${item.nama}</h6>
+                                    <div class="d-flex align-items-center mt-1">
+                                        <span class="badge ${badgeClass} rounded-pill" style="font-size: 9px;">${item.status}</span>
+                                        <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
+                                    </div>
+                                </div>
+                                ${fotoHtml}
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = htmlStr;
+                } else {
+                    document.getElementById('tempat-data-kepsek').innerHTML = '<p class="text-center text-danger mt-5">Gagal memuat data presensi.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('tempat-data-kepsek').innerHTML = '<p class="text-center text-danger mt-5">Terjadi kesalahan koneksi saat memuat data.</p>';
+            });
+        }
         }
     </script>
 </body>
