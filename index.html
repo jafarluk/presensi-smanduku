@@ -1212,7 +1212,7 @@ function switchView(viewId, isSistemBack = false) {
                         textLokasi = latClean + ", " + lngClean;
 
                         // Perbaikan format string URL Google Maps Satelit agar akurat
-                        let linkMaps = `https://maps.google.com/?q=${textLokasi.replace(" ", "")}&t=k`;
+                        let linkMaps = `https://www.google.com/maps?q=${latClean},${lngClean}&t=k`;
                         
                         lokasiHtml = `
                         <a href="${linkMaps}" target="_blank" class="text-primary mt-2 small d-inline-flex align-items-center text-decoration-none" style="font-size: 11px; background: #e8f0fe; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
