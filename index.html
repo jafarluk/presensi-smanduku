@@ -1088,17 +1088,20 @@ function switchView(viewId, isSistemBack = false) {
             });
         }
 
-// FUNGSI UNTUK MENYORTIR DATA (DENGAN TAMPILAN ALASAN IZIN)
+// FUNGSI UNTUK MENYORTIR DATA (DENGAN TAMPILAN ALASAN IZIN POLOS TANPA BACKGROUND)
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
             
+            // Efek visual: buramkan kotak yang tidak dipilih
             document.getElementById('card-filter-hadir').style.opacity = (mode === 'semua' || mode === 'hadir') ? '1' : '0.4';
             document.getElementById('card-filter-izin').style.opacity = (mode === 'semua' || mode === 'izin') ? '1' : '0.4';
             document.getElementById('card-filter-terlambat').style.opacity = (mode === 'semua' || mode === 'terlambat') ? '1' : '0.4';
             
+            // Tampilkan/sembunyikan tombol "Lihat Semua"
             if (mode === 'semua') document.getElementById('btn-filter-semua').classList.add('d-none');
             else document.getElementById('btn-filter-semua').classList.remove('d-none');
 
+            // Proses penyaringan
             let dataTampil = dataKepsekHariIni;
             if (mode === 'hadir') {
                 dataTampil = dataKepsekHariIni.filter(item => item.jenis === "Masuk");
@@ -1108,11 +1111,13 @@ function switchView(viewId, isSistemBack = false) {
                 dataTampil = dataKepsekHariIni.filter(item => item.status.toLowerCase().includes("terlambat"));
             }
 
+            // Tampilkan pesan jika kosong
             if(dataTampil.length === 0) {
                 container.innerHTML = `<div class="text-center mt-5"><span class="material-icons text-muted" style="font-size: 48px;">search_off</span><p class="mt-2 text-muted small">Tidak ada data untuk kategori ini.</p></div>`;
                 return;
             }
 
+            // Gambar ulang daftar kartu guru
             let htmlStr = "";
             dataTampil.forEach(item => {
                 let badgeClass = "bg-secondary";
@@ -1120,10 +1125,10 @@ function switchView(viewId, isSistemBack = false) {
                 else if (item.status.toLowerCase().includes("terlambat")) badgeClass = "bg-danger";
                 else badgeClass = "bg-warning text-dark"; 
 
-                // --- LOGIKA BARU: TAMPILKAN KOTAK ALASAN JIKA JENISNYA IZIN ---
+                // --- TAMPILAN ALASAN POLOS TANPA BACKGROUND ---
                 let alasanHtml = "";
                 if (item.jenis === "Izin" && item.alasan) {
-                    alasanHtml = `<div class="text-muted mt-2 small d-block" style="font-size: 11px; background: #fff3cd; padding: 6px 10px; border-radius: 8px; border-left: 3px solid #f9ab00; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
+                    alasanHtml = `<div class="text-secondary mt-1 small d-block" style="font-size: 11px; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
                 }
 
                 let fotoHtml = `<div class="ms-2 flex-shrink-0" style="width: 45px; height: 45px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><span class="material-icons text-black-50" style="font-size: 20px;">person</span></div>`;
