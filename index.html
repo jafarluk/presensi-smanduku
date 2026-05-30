@@ -1057,8 +1057,8 @@ function switchView(viewId, isSistemBack = false) {
         }
         
         function cekAksesKepsek() {
-            // Cek apakah ada kata "kepala sekolah" di dalam jabatannya (huruf besar/kecil tidak masalah)
-            if (currentUser.jabatan && currentUser.jabatan.toLowerCase().includes('kepala sekolah')) {
+            // Cek apakah ada kata "kepala sekolah" ATAU "admin" di dalam jabatannya (huruf besar/kecil otomatis terbaca)
+            if (currentUser.jabatan && (currentUser.jabatan.toLowerCase().includes('kepala sekolah') || currentUser.jabatan.toLowerCase().includes('admin'))) {
                 document.getElementById('menu-kepsek').classList.remove('d-none');
             } else {
                 document.getElementById('menu-kepsek').classList.add('d-none');
