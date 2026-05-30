@@ -1102,7 +1102,7 @@ function switchView(viewId, isSistemBack = false) {
             filterDataKepsek('semua');
         }
 
-        // FUNGSI SORTIR YANG DIPERBARUI DENGAN LOGIKA LOKASI SATELIT
+        // FUNGSI SORTIR YANG DIPERBARUI (FORCE 6 DIGIT & FIX LINK MAPS)
         function filterDataKepsek(mode) {
             const container = document.getElementById('tempat-data-kepsek');
             
@@ -1156,7 +1156,7 @@ function switchView(viewId, isSistemBack = false) {
                         status: statusAktif,
                         waktu: (modeSesiAktif === 'masuk') ? item.waktu_masuk : item.waktu_pulang,
                         foto: (modeSesiAktif === 'masuk') ? item.foto_masuk : item.foto_pulang,
-                        lokasi: (modeSesiAktif === 'masuk') ? item.lokasi_masuk : item.lokasi_pulang, // Menangkap Lokasi
+                        lokasi: (modeSesiAktif === 'masuk') ? item.lokasi_masuk : item.lokasi_pulang, 
                         alasan: item.alasan_izin,
                         isBelum: isBelum,
                         isIzin: isIzin
@@ -1186,19 +1186,25 @@ function switchView(viewId, isSistemBack = false) {
                     alasanHtml = `<div class="text-secondary mt-1 small d-block" style="font-size: 11px; line-height: 1.3;"><strong>Alasan:</strong> ${item.alasan}</div>`;
                 }
 
-                // --- LOGIKA BARU: TAMPILAN LOKASI (KLIK MENGARAH KE MAPS SATELIT) ---
+                // --- PERBAIKAN UTAMA LOKASI: FORCE POLOS 6 DIGIT & PERBAIKAN LINK MAPS ---
                 let lokasiHtml = "";
                 if (!item.isBelum && !item.isIzin && item.lokasi && item.lokasi !== "-") {
                     let textLokasi = item.lokasi;
                     if (textLokasi.includes(",")) {
-                        // Jika berisi koordinat, ubah jadi tombol link (t=k untuk mode satelit)
-                        let linkMaps = `https://maps.google.com/maps?q=${textLokasi.replace(" ", "")}&t=k`;
+                        // Pecah koordinat dan paksa potong menjadi 6 digit di sini agar data lama ikut rapi!
+                        let parts = textLokasi.split(",");
+                        let latClean = parseFloat(parts[0]).toFixed(6);
+                        let lngClean = parseFloat(parts[1]).toFixed(6);
+                        textLokasi = latClean + ", " + lngClean;
+
+                        // Perbaikan penulisan variabel template literal link Google Maps Satelit
+                        let linkMaps = `https://maps.google.com/?q=${textLokasi.replace(" ", "")}&t=k`;
+                        
                         lokasiHtml = `
                         <a href="${linkMaps}" target="_blank" class="text-primary mt-2 small d-inline-flex align-items-center text-decoration-none" style="font-size: 11px; background: #e8f0fe; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                             <span class="material-icons me-1" style="font-size: 14px;">satellite_alt</span> ${textLokasi}
                         </a>`;
                     } else {
-                        // Jika berisi teks error (contoh: "Akses GPS Ditolak")
                         lokasiHtml = `
                         <span class="text-danger mt-2 small d-inline-flex align-items-center" style="font-size: 11px; background: #fce8e6; padding: 4px 8px; border-radius: 6px;">
                             <span class="material-icons me-1" style="font-size: 14px;">location_off</span> ${textLokasi}
@@ -1231,7 +1237,8 @@ function switchView(viewId, isSistemBack = false) {
                                 <small class="text-muted fw-bold ms-2" style="font-size: 10px;"><span class="material-icons align-middle" style="font-size: 11px;">schedule</span> ${item.waktu}</small>
                             </div>
                             ${alasanHtml}
-                            ${lokasiHtml} </div>
+                            ${lokasiHtml} 
+                        </div>
                         ${fotoHtml}
                     </div>
                 </div>`;
